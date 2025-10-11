@@ -1,14 +1,14 @@
-// SafeSend Brand Color Palette
+// SafeSend Brand Color Palette - Based on Logo Colors
 export const colors = {
-  // Primary brand colors
-  primary: '#ec348b',
-  primaryLight: '#f158a0',
-  primaryDark: '#d12978',
+  // Primary brand colors (Blue from logo)
+  primary: '#00aef2',
+  primaryLight: '#33bef4',
+  primaryDark: '#0098d4',
   
-  // Secondary colors
-  secondary: '#722ed1',
-  secondaryLight: '#9254de',
-  secondaryDark: '#531dab',
+  // Secondary colors (Gray from logo)
+  secondary: '#4f4d4c',
+  secondaryLight: '#6b6968',
+  secondaryDark: '#3a3938',
   
   // Neutral colors
   white: '#ffffff',
@@ -37,15 +37,15 @@ export const colors = {
     primary: '#ffffff',
     secondary: '#f5f5f5',
     tertiary: '#fafafa',
-    gradient: 'linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%)',
-    gradientPrimary: 'linear-gradient(135deg, #ec348b 0%, #722ed1 100%)',
+    gradient: 'linear-gradient(135deg, #e6f7ff 0%, #d6f1ff 100%)', // Light blue gradient
+    gradientPrimary: 'linear-gradient(135deg, #00aef2 0%, #4f4d4c 100%)', // Logo colors gradient
   },
   
   // Brand specific colors
   brand: {
-    pink: '#fde7f3', // Light pink background
-    purple: '#f9f0ff', // Light purple background
-    green: '#f6ffed', // Light green background
+    blue: '#e6f7ff', // Light blue background
+    gray: '#f5f5f4', // Light gray background  
+    green: '#f6ffed', // Light green background (keep for success states)
   }
 };
 

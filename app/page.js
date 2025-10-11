@@ -24,7 +24,7 @@ const Home = () => {
 		<div
 			style={{
 				minHeight: '100vh',
-				background: 'linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%)'
+				background: 'linear-gradient(135deg, #e6f7ff 0%, #d6f1ff 100%)'
 			}}
 		>
 			{/* Hero Section */}
@@ -52,7 +52,7 @@ const Home = () => {
 										}}
 									>
 										PYUSD Consumer Protection
-										<span style={{ color: '#ec348b', display: 'block' }}>On-Chain</span>
+										<span style={{ color: '#00aef2', display: 'block' }}>On-Chain</span>
 									</h1>
 									<p
 										style={{
@@ -72,7 +72,7 @@ const Home = () => {
 									{CHECKLIST_ITEMS.map((item, i) => (
 										<div key={i} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
 											<CheckCircleTwoTone
-												twoToneColor="#ec348b"
+												twoToneColor="#00aef2"
 												style={{ fontSize: '20px', marginTop: '4px', marginRight: '12px' }}
 											/>
 											<span
@@ -128,7 +128,7 @@ const Home = () => {
 							{/* Animated Visual Container */}
 							<div
 								style={{
-									background: 'linear-gradient(135deg, #ec348b 0%, #722ed1 100%)',
+									background: 'linear-gradient(135deg, #00aef2 0%, #4f4d4c 100%)',
 									borderRadius: '24px',
 									padding: '48px',
 									position: 'relative',
@@ -399,7 +399,7 @@ const Home = () => {
 									style={{
 										width: '64px',
 										height: '64px',
-										background: '#fde7f3',
+										background: '#e6f7ff',
 										borderRadius: '50%',
 										display: 'flex',
 										alignItems: 'center',
@@ -407,7 +407,7 @@ const Home = () => {
 										margin: '0 auto 24px'
 									}}
 								>
-									<LockTwoTone twoToneColor="#ec348b" style={{ fontSize: '24px' }} />
+									<LockTwoTone twoToneColor="#00aef2" style={{ fontSize: '24px' }} />
 								</div>
 								<h3
 									style={{
@@ -481,7 +481,7 @@ const Home = () => {
 									style={{
 										width: '64px',
 										height: '64px',
-										background: '#f9f0ff',
+										background: '#f5f5f4',
 										borderRadius: '50%',
 										display: 'flex',
 										alignItems: 'center',
@@ -489,7 +489,7 @@ const Home = () => {
 										margin: '0 auto 24px'
 									}}
 								>
-									<SafetyCertificateTwoTone twoToneColor="#722ed1" style={{ fontSize: '24px' }} />
+									<SafetyCertificateTwoTone twoToneColor="#4f4d4c" style={{ fontSize: '24px' }} />
 								</div>
 								<h3
 									style={{
@@ -774,7 +774,7 @@ const Home = () => {
 						</Col>
 					</Row>
 
-					<div style={{ textAlign: 'center', marginTop: '48px', padding: '32px', background: '#f0f8ff', borderRadius: '16px' }}>
+					<div style={{ textAlign: 'center', marginTop: '48px', padding: '32px', background: '#e6f7ff', borderRadius: '16px' }}>
 						<h4 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '12px' }}>
 							🔍 Transparent Event Logs
 						</h4>
@@ -792,7 +792,7 @@ const Home = () => {
 				>
 					<div
 						style={{
-							background: 'linear-gradient(135deg, #ec348b 0%, #722ed1 100%)',
+							background: 'linear-gradient(135deg, #00aef2 0%, #4f4d4c 100%)',
 							borderRadius: '24px',
 							padding: '48px',
 							color: 'white'
@@ -827,7 +827,7 @@ const Home = () => {
 									fontSize: '18px',
 									fontWeight: '600',
 									background: 'white',
-									color: '#ec348b',
+									color: '#00aef2',
 									border: 'none',
 									borderRadius: '8px'
 								}}
