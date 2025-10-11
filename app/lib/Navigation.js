@@ -16,20 +16,20 @@ export default function Navigation() {
     const router = useRouter();
     const pathname = usePathname();
 
-    // Hide 'Create Offer' and 'My Offers' tabs on /offer pages
-    const isOfferPage = pathname.startsWith('/offer');
+    // Hide escrow creation tabs on /escrow pages
+    const isEscrowPage = pathname.startsWith('/escrow');
     const navItems = [
-        !isOfferPage && {
-            key: 'create',
-            label: 'Create Offer',
+        !isEscrowPage && {
+            key: 'escrow',
+            label: 'Create Escrow',
             icon: <PlusOutlined />, 
-            path: '/create'
+            path: '/escrow'
         },
-        !isOfferPage && {
-            key: 'my-offers',
-            label: 'My Offers',
-            icon: <HomeOutlined style={{ color: '#722ed1' }} />, // You can replace with a better icon
-            path: '/my-offers'
+        !isEscrowPage && {
+            key: 'my-escrows',
+            label: 'My Escrows',
+            icon: <HomeOutlined style={{ color: '#4f4d4c' }} />, 
+            path: '/my-escrows'
         },
         {
             key: 'about',
@@ -95,11 +95,11 @@ export default function Navigation() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 cursor: 'pointer',
-                                color: pathname === item.path ? '#ec348b' : '#4b5563',
+                                color: pathname === item.path ? '#00aef2' : '#4b5563',
                                 fontWeight: pathname === item.path ? 600 : 500,
                                 fontSize: '16px',
                                 opacity: pathname === item.path ? 1 : 0.85,
-                                borderBottom: pathname === item.path ? '2px solid #ec348b' : '2px solid transparent',
+                                borderBottom: pathname === item.path ? '2px solid #00aef2' : '2px solid transparent',
                                 padding: '8px 0',
                                 transition: 'color 0.2s, border-bottom 0.2s',
                             }}

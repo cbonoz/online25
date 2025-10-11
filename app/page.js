@@ -11,10 +11,8 @@ import { colors } from './theme/colors';
 
 const CHECKLIST_ITEMS = [
 	"Secure PYUSD escrow with fraud protection",
-	"Automated refunds via fraud attestations", 
-	"Transparent on-chain transaction history",
-	"Oracle-verified fraud detection",
-	"PayPal-like consumer protection, on-chain"
+	"Automated refunds via oracle attestations", 
+	"Transparent on-chain transaction history"
 ];
 
 const Home = () => {
@@ -93,7 +91,7 @@ const Home = () => {
 									<Button
 										size="large"
 										type="primary"
-										onClick={() => router.push('/create')}
+										onClick={() => router.push('/escrow')}
 										style={{
 											height: '48px',
 											padding: '0 32px',
@@ -831,7 +829,7 @@ const Home = () => {
 									border: 'none',
 									borderRadius: '8px'
 								}}
-								onClick={() => router.push('/create')}
+								onClick={() => router.push('/escrow')}
 							>
 								Create Escrow
 							</Button>

@@ -50,33 +50,13 @@ export default function About() {
                     About {APP_NAME}
                 </Title>
                 <Paragraph style={{ fontSize: '20px', color: '#666', maxWidth: '700px', margin: '0 auto 32px' }}>
-                    <b>SafeSend</b> is a decentralized form + payment system for any service or service provider. Collect structured client info, generate offers, and manage payments—all on-chain, with wallet-based authentication and smart contract automation.
+                    <b>SafeSend</b> is a PYUSD escrow system with fraud protection. Create secure escrow transactions with automatic refunds via oracle attestations—bringing PayPal-like consumer protection to on-chain payments.
                 </Paragraph>
                 
-                {/* Hackathon Notice */}
-                <Card 
-                    style={{ 
-                        background: '#fafafa',
-                        border: '1px solid #d9d9d9',
-                        marginBottom: '32px'
-                    }}
-                >
-                    <Space>
-                        <CodeOutlined style={{ fontSize: '16px', color: '#8c8c8c' }} />
-                        <Text style={{ color: '#595959', fontSize: '14px' }}>
-                            Hackathon Prototype
-                        </Text>
-                    </Space>
-                    <Paragraph style={{ marginTop: '8px', marginBottom: 0, color: '#8c8c8c', fontSize: '14px' }}>
-                        This application is a hackathon prototype built for demonstration purposes. 
-                        It is provided "as-is" without warranties. Only accept offers or submit payments to trusted recipients and businesses.
-                    </Paragraph>
-                </Card>
-
                 <Button 
                     type="primary" 
                     size="large"
-                    onClick={() => router.push('/create')}
+                    onClick={() => router.push('/escrow')}
                     style={{ 
                         height: '48px', 
                         padding: '0 32px', 
@@ -222,7 +202,7 @@ export default function About() {
                         <Button 
                             type="primary" 
                             size="large"
-                            onClick={() => router.push('/create')}
+                            onClick={() => router.push('/escrow')}
                         >
                             Try the Demo
                         </Button>
