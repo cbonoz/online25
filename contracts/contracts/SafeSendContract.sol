@@ -1,0 +1,273 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+/**
+ * @title SafeSendContract
+ * @dev PYUSD Escrow contract with fraud protection and oracle-based attestations
+ * Brings PayPal-like consumer protection to on-chain stablecoin payments
+ */
+contract SafeSendContract is Ownable, ReentrancyGuard {
+    IERC20 public immutable pyusdToken;
+    address public fraudOracle;
+    
+    uint256 public escrowCounter;
+    
+    enum EscrowStatus {
+        Active,
+        Released,
+        Refunded,
+        FraudFlagged
+    }
+    
+    struct Escrow {
+        uint256 id;
+        address buyer;
+        address seller;
+        uint256 amount;
+        string description;
+        EscrowStatus status;
+        uint256 createdAt;
+        bool fraudFlagged;
+    }
+    
+    mapping(uint256 => Escrow) public escrows;
+    mapping(address => uint256[]) public buyerEscrows;
+    mapping(address => uint256[]) public sellerEscrows;
+    
+    // Events for transparency and auditability
+    event Deposited(
+        uint256 indexed escrowId,
+        address indexed buyer,
+        address indexed seller,
+        uint256 amount,
+        string description
+    );
+    
+    event Released(
+        uint256 indexed escrowId,
+        address indexed buyer,
+        address indexed seller,
+        uint256 amount
+    );
+    
+    event Refunded(
+        uint256 indexed escrowId,
+        address indexed buyer,
+        uint256 amount
+    );
+    
+    event FraudFlagged(
+        uint256 indexed escrowId,
+        address indexed flaggedBy
+    );
+    
+    event OracleUpdated(
+        address indexed oldOracle,
+        address indexed newOracle
+    );
+    
+    modifier onlyFraudOracle() {
+        require(msg.sender == fraudOracle, "Only fraud oracle can call this");
+        _;
+    }
+    
+    modifier escrowExists(uint256 escrowId) {
+        require(escrows[escrowId].buyer != address(0), "Escrow does not exist");
+        _;
+    }
+    
+    modifier onlyBuyer(uint256 escrowId) {
+        require(msg.sender == escrows[escrowId].buyer, "Only buyer can call this");
+        _;
+    }
+    
+    modifier onlySeller(uint256 escrowId) {
+        require(msg.sender == escrows[escrowId].seller, "Only seller can call this");
+        _;
+    }
+    
+    constructor(address _pyusdToken, address _fraudOracle) Ownable(msg.sender) {
+        require(_pyusdToken != address(0), "Invalid PYUSD token address");
+        require(_fraudOracle != address(0), "Invalid fraud oracle address");
+        
+        pyusdToken = IERC20(_pyusdToken);
+        fraudOracle = _fraudOracle;
+    }
+    
+    /**
+     * @dev Deposit PYUSD into escrow for a specific seller
+     * @param seller Address of the seller
+     * @param amount Amount of PYUSD to escrow
+     * @param description Description of the transaction
+     */
+    function deposit(
+        address seller,
+        uint256 amount,
+        string memory description
+    ) external nonReentrant returns (uint256) {
+        require(seller != address(0), "Invalid seller address");
+        require(seller != msg.sender, "Buyer cannot be seller");
+        require(amount > 0, "Amount must be greater than 0");
+        require(bytes(description).length > 0, "Description cannot be empty");
+        
+        // Transfer PYUSD from buyer to contract
+        require(
+            pyusdToken.transferFrom(msg.sender, address(this), amount),
+            "PYUSD transfer failed"
+        );
+        
+        escrowCounter++;
+        uint256 escrowId = escrowCounter;
+        
+        escrows[escrowId] = Escrow({
+            id: escrowId,
+            buyer: msg.sender,
+            seller: seller,
+            amount: amount,
+            description: description,
+            status: EscrowStatus.Active,
+            createdAt: block.timestamp,
+            fraudFlagged: false
+        });
+        
+        buyerEscrows[msg.sender].push(escrowId);
+        sellerEscrows[seller].push(escrowId);
+        
+        emit Deposited(escrowId, msg.sender, seller, amount, description);
+        
+        return escrowId;
+    }
+    
+    /**
+     * @dev Release funds to seller (normal transaction completion)
+     * @param escrowId ID of the escrow to release
+     */
+    function release(uint256 escrowId) 
+        external 
+        escrowExists(escrowId) 
+        onlyBuyer(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.Active, "Escrow is not active");
+        require(!escrow.fraudFlagged, "Cannot release flagged escrow");
+        
+        escrow.status = EscrowStatus.Released;
+        
+        require(
+            pyusdToken.transfer(escrow.seller, escrow.amount),
+            "PYUSD transfer to seller failed"
+        );
+        
+        emit Released(escrowId, escrow.buyer, escrow.seller, escrow.amount);
+    }
+    
+    /**
+     * @dev Refund funds to buyer (can be called by buyer or automatically via fraud detection)
+     * @param escrowId ID of the escrow to refund
+     */
+    function refund(uint256 escrowId) 
+        external 
+        escrowExists(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.Active, "Escrow is not active");
+        
+        // Only buyer or fraud oracle can initiate refund
+        require(
+            msg.sender == escrow.buyer || msg.sender == fraudOracle,
+            "Only buyer or fraud oracle can refund"
+        );
+        
+        escrow.status = EscrowStatus.Refunded;
+        
+        require(
+            pyusdToken.transfer(escrow.buyer, escrow.amount),
+            "PYUSD transfer to buyer failed"
+        );
+        
+        emit Refunded(escrowId, escrow.buyer, escrow.amount);
+    }
+    
+    /**
+     * @dev Mark escrow as fraudulent (oracle attestation)
+     * @param escrowId ID of the escrow to flag
+     */
+    function markFraud(uint256 escrowId) 
+        external 
+        escrowExists(escrowId) 
+        onlyFraudOracle 
+    {
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.Active, "Escrow is not active");
+        
+        escrow.fraudFlagged = true;
+        escrow.status = EscrowStatus.FraudFlagged;
+        
+        emit FraudFlagged(escrowId, msg.sender);
+        
+        // Automatically refund buyer when fraud is flagged
+        require(
+            pyusdToken.transfer(escrow.buyer, escrow.amount),
+            "PYUSD refund transfer failed"
+        );
+        
+        escrow.status = EscrowStatus.Refunded;
+        emit Refunded(escrowId, escrow.buyer, escrow.amount);
+    }
+    
+    /**
+     * @dev Update fraud oracle address (only owner)
+     * @param newOracle New fraud oracle address
+     */
+    function updateFraudOracle(address newOracle) external onlyOwner {
+        require(newOracle != address(0), "Invalid oracle address");
+        
+        address oldOracle = fraudOracle;
+        fraudOracle = newOracle;
+        
+        emit OracleUpdated(oldOracle, newOracle);
+    }
+    
+    /**
+     * @dev Get escrow details
+     * @param escrowId ID of the escrow
+     */
+    function getEscrow(uint256 escrowId) 
+        external 
+        view 
+        escrowExists(escrowId) 
+        returns (Escrow memory) 
+    {
+        return escrows[escrowId];
+    }
+    
+    /**
+     * @dev Get buyer's escrow IDs
+     * @param buyer Address of the buyer
+     */
+    function getBuyerEscrows(address buyer) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return buyerEscrows[buyer];
+    }
+    
+    /**
+     * @dev Get seller's escrow IDs
+     * @param seller Address of the seller
+     */
+    function getSellerEscrows(address seller) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return sellerEscrows[seller];
+    }
+}
