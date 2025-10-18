@@ -1,11 +1,14 @@
 {
   "name": "contracts",
   "version": "1.0.0",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "npx hardhat test",
     "build": "npx hardhat compile",
-    "deploy:sepolia": "npx hardhat ignition deploy --network sepolia ignition/modules/SafeSendContract.ts"
+    "deploy:test": "npx hardhat ignition deploy ignition/modules/SafeSendContractTest.ts",
+    "deploy:sepolia": "HARDHAT_NETWORK=sepolia npx hardhat ignition deploy --network sepolia ignition/modules/SafeSendContract.ts",
+    "deploy:mainnet": "HARDHAT_NETWORK=mainnet npx hardhat ignition deploy --network hardhatMainnet ignition/modules/SafeSendContract.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.3",
@@ -15,5 +18,15 @@
     "hardhat": "^3.0.7",
     "typescript": "~5.8.0",
     "viem": "^2.38.0"
+  },
+  "dependencies": {
+    "@nomicfoundation/hardhat-ignition-viem": "^3.0.3",
+    "@nomicfoundation/hardhat-keystore": "^3.0.1",
+    "@nomicfoundation/hardhat-network-helpers": "^3.0.1",
+    "@nomicfoundation/hardhat-node-test-runner": "^3.0.3",
+    "@nomicfoundation/hardhat-verify": "^3.0.3",
+    "@nomicfoundation/hardhat-viem": "^3.0.0",
+    "@nomicfoundation/hardhat-viem-assertions": "^3.0.2",
+    "@openzeppelin/contracts": "^5.4.0"
   }
 }

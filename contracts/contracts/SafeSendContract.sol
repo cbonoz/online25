@@ -71,6 +71,7 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
     );
     
     modifier onlyFraudOracle() {
+        require(fraudOracle != address(0), "No fraud oracle configured");
         require(msg.sender == fraudOracle, "Only fraud oracle can call this");
         _;
     }
@@ -92,7 +93,7 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
     
     constructor(address _pyusdToken, address _fraudOracle) Ownable(msg.sender) {
         require(_pyusdToken != address(0), "Invalid PYUSD token address");
-        require(_fraudOracle != address(0), "Invalid fraud oracle address");
+        // Note: _fraudOracle can be address(0) to disable oracle functionality
         
         pyusdToken = IERC20(_pyusdToken);
         fraudOracle = _fraudOracle;
@@ -178,9 +179,10 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
         Escrow storage escrow = escrows[escrowId];
         require(escrow.status == EscrowStatus.Active, "Escrow is not active");
         
-        // Only buyer or fraud oracle can initiate refund
+        // Only buyer or fraud oracle can initiate refund (if oracle is configured)
         require(
-            msg.sender == escrow.buyer || msg.sender == fraudOracle,
+            msg.sender == escrow.buyer || 
+            (fraudOracle != address(0) && msg.sender == fraudOracle),
             "Only buyer or fraud oracle can refund"
         );
         

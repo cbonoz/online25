@@ -14,7 +14,8 @@ export const siteConfig = {
         width: 180,
         height: 37,
         alt: 'SafeSend Logo'
-    }
+    },
+    contractAddress: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || undefined
 };
 
 // Legacy exports for backward compatibility
@@ -28,7 +29,9 @@ export const CHAIN_MAP = {
     [sepolia.id]: sepolia,
     [mainnet.id]: mainnet
 };
-export const ACTIVE_CHAIN = sepolia;
+
+export const NETWORK = process.env.NEXT_PUBLIC_NETWORK
+export const ACTIVE_CHAIN =  NETWORK === 'mainnet' ? mainnet : sepolia;
 
 // Helper function to get explorer URL for current chain
 export const getExplorerUrl = (chainId = ACTIVE_CHAIN.id) => {
@@ -43,14 +46,11 @@ export const getExplorerLink = (address, type = 'address', chainId = ACTIVE_CHAI
 };
 
 // PYUSD token address (replace with actual addresses)
-export const PYUSD_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_NETWORK === 'mainnet'
+export const PYUSD_TOKEN_ADDRESS = NETWORK === 'mainnet'
     ? '0x6c3ea9036406852006290770BEdFcAbA0e23A0e8' // mainnet address
-    : '0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9'; // testnet address (default)
+    : '0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9'; // testnet address (sepolia default)
 
-export const IPFS_BASE_URL = 'https://ipfs.example.com';
+export const IPFS_BASE_URL = 'https://ipfs.io/ipfs';
 
-export const MAX_FILE_SIZE_BYTES = 5000000; // 5MB
-// Dynamic, Nora, ENS, and other integrations (add more as needed)
+// Dynamic and other integrations (add more as needed)
 export const DYNAMIC_AUTH_URL = 'https://dynamic.xyz'; // Example placeholder
-export const NORA_AI_URL = 'https://nora.example.com'; // Example placeholder
-export const ENS_RESOLVER_URL = 'https://app.ens.domains'; // Example placeholder

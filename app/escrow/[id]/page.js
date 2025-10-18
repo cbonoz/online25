@@ -5,9 +5,9 @@ import { Card, Typography, Space, Button, Alert, Tag, Descriptions, Steps, Timel
 import { 
     DollarOutlined, 
     UserOutlined, 
-    ShieldCheckOutlined,
+    SafetyCertificateTwoTone,
     CheckCircleOutlined,
-    ExclamationTriangleOutlined,
+    WarningOutlined,
     ArrowLeftOutlined,
     EyeOutlined
 } from '@ant-design/icons';
@@ -211,7 +211,7 @@ export default function EscrowDetailsPage() {
                                         block
                                         onClick={handleRefund}
                                         loading={loading}
-                                        icon={<ExclamationTriangleOutlined />}
+                                        icon={<WarningOutlined />}
                                     >
                                         Request Refund
                                     </Button>
@@ -232,7 +232,7 @@ export default function EscrowDetailsPage() {
                     <Card title="Fraud Protection" size="small">
                         <Space direction="vertical" style={{ width: '100%' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <ShieldCheckOutlined style={{ color: '#52c41a' }} />
+                                <SafetyCertificateTwoTone twoToneColor="#52c41a" style={{ fontSize: '16px' }} />
                                 <Text>Oracle monitoring active</Text>
                             </div>
                             <Text type="secondary" style={{ fontSize: '12px' }}>

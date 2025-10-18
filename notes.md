@@ -29,9 +29,21 @@ Bringing PayPal-like consumer protection to on-chain stablecoin payments using a
 
 ## Sponsors
 
-1. PyUSD – Provides the stablecoin for secure, real-world-value payments in the escrow system, enabling consumer payment use cases.
+SafeSend is built around three key partner technologies: PYUSD, Hardhat, and Blockscout.
+
+PYUSD – PayPal’s regulated stablecoin serves as the payment rail. Because it’s fully ERC-20 compatible and backed by real-world reserves, it provides the reliability and consumer confidence needed for escrow-based payments. All transfers and refunds in SafeSend use PYUSD, ensuring predictable settlement and fiat equivalence.
+
+Hardhat – Used for contract development, deployment, and verification. Hardhat’s scripting and testing environment made it possible to quickly simulate multiple fraud scenarios, verify contracts on testnets, and emit events compatible with explorer indexing.
+
+Blockscout – Integrated as both a transparency layer and developer tool. Every SafeSend action (deposit, fraud attestation, refund, release) emits an event visible through Blockscout’s explorer and SDK, making the entire fraud arbitration process publicly auditable.
+
+The contract is written in Solidity, deployed on Ethereum testnets, and uses a single shared escrow logic that supports multiple businesses. Each business registers its own oracle for fraud attestations, allowing scalable participation without redeploying new contracts.
+
+In essence, SafeSend combines on-chain logic, stablecoin security, and open attestations to create a trust-minimized consumer protection system for digital payments — bringing Web2-style confidence into the Web3 economy.
+
+<!-- 1. PyUSD – Provides the stablecoin for secure, real-world-value payments in the escrow system, enabling consumer payment use cases.
 2. Hardhat – Handles smart contract deployment, testing, and verification, ensuring reproducibility and developer productivity.
-3. Blockscout – Offers blockchain explorer functionality and SDK support for viewing contract events, token balances, and auditing escrow transactions in real time.
+3. Blockscout – Offers blockchain explorer functionality and SDK support for viewing contract events, token balances, and auditing escrow transactions in real time. -->
 
 ---
 

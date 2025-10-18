@@ -38,17 +38,17 @@ describe("SafeSendContract", async function () {
   describe("Deployment", function () {
     it("Should set the correct PYUSD token address", async function () {
       const tokenAddress = await safeSendContract.read.pyusdToken();
-      assert.equal(tokenAddress, mockPYUSD.address);
+      assert.equal(tokenAddress.toLowerCase(), mockPYUSD.address.toLowerCase());
     });
 
     it("Should set the correct fraud oracle", async function () {
       const oracle = await safeSendContract.read.fraudOracle();
-      assert.equal(oracle, fraudOracle.account.address);
+      assert.equal(oracle.toLowerCase(), fraudOracle.account.address.toLowerCase());
     });
 
     it("Should set the deployer as owner", async function () {
       const owner = await safeSendContract.read.owner();
-      assert.equal(owner, deployer.account.address);
+      assert.equal(owner.toLowerCase(), deployer.account.address.toLowerCase());
     });
   });
 
@@ -61,8 +61,8 @@ describe("SafeSendContract", async function () {
 
       // Check escrow details
       const escrow = await safeSendContract.read.getEscrow([1n]);
-      assert.equal(escrow.buyer, buyer.account.address);
-      assert.equal(escrow.seller, seller.account.address);
+      assert.equal(escrow.buyer.toLowerCase(), buyer.account.address.toLowerCase());
+      assert.equal(escrow.seller.toLowerCase(), seller.account.address.toLowerCase());
       assert.equal(escrow.amount, escrowAmount);
       assert.equal(escrow.description, description);
       assert.equal(escrow.status, 0); // EscrowStatus.Active
@@ -202,7 +202,7 @@ describe("SafeSendContract", async function () {
       await safeSendContract.write.updateFraudOracle([newOracle]);
 
       const updatedOracle = await safeSendContract.read.fraudOracle();
-      assert.equal(updatedOracle, newOracle);
+      assert.equal(updatedOracle.toLowerCase(), newOracle.toLowerCase());
     });
 
     it("Should revert if non-owner tries to update oracle", async function () {
@@ -214,6 +214,13 @@ describe("SafeSendContract", async function () {
 
   describe("View Functions", function () {
     beforeEach(async function () {
+      // Mint tokens and approve for seller as well
+      await mockPYUSD.write.mint([seller.account.address, parseEther("1000")]);
+      await mockPYUSD.write.approve(
+        [safeSendContract.address, parseEther("1000")],
+        { account: seller.account }
+      );
+      
       // Create multiple escrows
       await safeSendContract.write.deposit(
         [seller.account.address, escrowAmount, "Project 1"],

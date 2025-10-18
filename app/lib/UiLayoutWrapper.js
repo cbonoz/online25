@@ -50,7 +50,7 @@ function UiLayoutWrapper({ children }) {
 					       <Footer style={{ textAlign: 'center' }}>
 						       <hr />
 						       <br />
-						       {APP_NAME} ©2025. {ACTIVE_CHAIN.name} demo. <a href="/about">About</a>
+						       {APP_NAME} ©2025. {ACTIVE_CHAIN.name} network. <a href="/about">About</a>
 					       </Footer>
 				       )}
 			       </Layout>

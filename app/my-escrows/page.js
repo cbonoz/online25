@@ -5,7 +5,7 @@ import { Card, Typography, Space, Button, Table, Tag, Alert, Tabs } from 'antd';
 import { 
     EyeOutlined, 
     DollarOutlined, 
-    ShieldCheckOutlined, 
+    SafetyCertificateTwoTone, 
     ClockCircleOutlined,
     CheckCircleOutlined,
     ExclamationCircleOutlined
@@ -178,7 +178,7 @@ export default function MyEscrowsPage() {
                             locale={{
                                 emptyText: (
                                     <div style={{ textAlign: 'center', padding: '40px' }}>
-                                        <ShieldCheckOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
+                                        <SafetyCertificateTwoTone twoToneColor="#d9d9d9" style={{ fontSize: '48px', marginBottom: '16px' }} />
                                         <Title level={4} style={{ color: '#999' }}>No Active Escrows</Title>
                                         <Paragraph style={{ color: '#666' }}>
                                             You don't have any active escrow transactions.

@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Button, Card, Form, Input, InputNumber, Typography, Space, Alert, Steps } from 'antd';
 import { LockOutlined, UserOutlined, DollarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { APP_NAME } from '../constants';
 
 const { Title, Paragraph, Text } = Typography;
 const { Step } = Steps;
