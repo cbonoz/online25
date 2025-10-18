@@ -196,7 +196,14 @@ export const getEscrow = async (escrowId) => {
             status: escrow.status,
             statusText: getStatusText(escrow.status),
             createdAt: formatDate(new Date(Number(escrow.createdAt) * 1000)),
-            fraudFlagged: escrow.fraudFlagged
+            fraudFlagged: escrow.fraudFlagged,
+            events: [
+                {
+                    type: 'Deposited',
+                    timestamp: formatDate(new Date(Number(escrow.createdAt) * 1000)),
+                    description: 'PYUSD deposited into escrow contract'
+                }
+            ]
         };
     } catch (error) {
         console.error('Error getting escrow:', error);

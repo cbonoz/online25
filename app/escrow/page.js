@@ -23,7 +23,7 @@ export default function DepositPage() {
     const [currentStep, setCurrentStep] = useState(0);
     const { primaryWallet, user } = useDynamicContext();
     const walletClient = useWalletClient();
-    const { address: walletAddress, isConnected, walletType } = useWalletAddress();
+    const { address: walletAddress, isConnected, walletType, hasChanged, resetHasChanged } = useWalletAddress();
     const { ensureCorrectNetwork, isCorrectNetwork } = useNetworkSwitcher();
 
     // Debug wallet connection state
@@ -37,10 +37,23 @@ export default function DepositPage() {
             walletAddress,
             isConnected,
             walletType,
+            hasChanged,
             buttonShouldBeEnabled: !!(primaryWallet && isConnected && walletAddress),
             buttonCurrentlyDisabled: !primaryWallet || !walletClient
         });
-    }, [primaryWallet, user, walletClient, walletAddress, isConnected, walletType]);
+    }, [primaryWallet, user, walletClient, walletAddress, isConnected, walletType, hasChanged]);
+
+    // Reset hasChanged flag after showing success message
+    useEffect(() => {
+        if (walletAddress && hasChanged) {
+            // Reset the flag after a short delay to ensure the success message is shown
+            const timer = setTimeout(() => {
+                resetHasChanged();
+            }, 5000); // Hide after 5 seconds
+            
+            return () => clearTimeout(timer);
+        }
+    }, [walletAddress, hasChanged, resetHasChanged]);
 
     const handleDeposit = async (values) => {
         // Enhanced wallet connection checks using Dynamic.xyz
@@ -271,7 +284,7 @@ export default function DepositPage() {
                 />
             )}
 
-            {walletAddress && (
+            {walletAddress && hasChanged && (
                 <Alert
                     message={`Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
                     description="Wallet connected successfully. You can now create escrow transactions."

@@ -3,11 +3,12 @@
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { createWalletClient, custom } from "viem";
 import { ACTIVE_CHAIN } from "../constants";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 
 export function useWalletClient() {
     const { primaryWallet, user } = useDynamicContext();
     const [asyncProvider, setAsyncProvider] = useState(null);
+    const lastFailedAttemptRef = useRef(null);
     
     // Extract only stable primitive values for useMemo dependencies
     const walletAddress = primaryWallet?.address || user?.walletAddress || '';
@@ -51,6 +52,13 @@ export function useWalletClient() {
             return null;
         }
         
+        // Prevent repeated failed attempts for the same configuration
+        const currentAttemptKey = `${connectorKey}-${walletAddress}`;
+        if (lastFailedAttemptRef.current === currentAttemptKey) {
+            console.log('Skipping repeated failed attempt for:', currentAttemptKey);
+            return null;
+        }
+        
         // Get provider - different wallets expose this differently
         let provider;
         try {
@@ -62,7 +70,7 @@ export function useWalletClient() {
                       asyncProvider;
             
             // For Coinbase wallet, sometimes we need to get it from window.ethereum
-            if (!provider && connectorKey === 'coinbasewallet') {
+            if (!provider && (connectorKey === 'coinbasewallet' || connectorKey === 'coinbase')) {
                 console.log('Trying Coinbase wallet fallback detection...');
                 if (typeof window !== 'undefined' && window.ethereum) {
                     console.log('Window ethereum available:', {
@@ -81,7 +89,7 @@ export function useWalletClient() {
             }
             
             // Additional Coinbase wallet detection methods
-            if (!provider && connectorKey === 'coinbasewallet') {
+            if (!provider && (connectorKey === 'coinbasewallet' || connectorKey === 'coinbase')) {
                 console.log('Trying additional Coinbase detection methods...');
                 // Try getting provider from connector methods
                 const connector = primaryWallet.connector;
@@ -104,6 +112,12 @@ export function useWalletClient() {
                         }
                     }
                 }
+                
+                // Try window.coinbaseWalletExtension
+                if (!provider && typeof window !== 'undefined' && window.coinbaseWalletExtension) {
+                    console.log('Found Coinbase wallet extension');
+                    provider = window.coinbaseWalletExtension;
+                }
             }
             
             if (!provider) {
@@ -115,12 +129,22 @@ export function useWalletClient() {
                     hasPrivateProvider: !!primaryWallet.connector._provider,
                     hasAsyncProvider: !!asyncProvider
                 });
+                // Mark this attempt as failed to prevent repeated tries
+                lastFailedAttemptRef.current = currentAttemptKey;
                 return null;
             }
             
             console.log('Found provider for wallet:', connectorKey, typeof provider);
         } catch (error) {
             console.error('Error getting provider:', error);
+            lastFailedAttemptRef.current = currentAttemptKey;
+            return null;
+        }
+
+        // Ensure we have a valid provider before creating wallet client
+        if (!provider) {
+            console.warn('No provider available for wallet client creation');
+            lastFailedAttemptRef.current = currentAttemptKey;
             return null;
         }
 
@@ -132,9 +156,12 @@ export function useWalletClient() {
             });
             
             console.log('Wallet client created successfully for:', connectorKey);
+            // Reset failed attempts on success
+            lastFailedAttemptRef.current = null;
             return client;
         } catch (error) {
             console.error('Error creating wallet client:', error);
+            lastFailedAttemptRef.current = currentAttemptKey;
             return null;
         }
     }, [walletAddress, connectorKey, hasWallet, hasConnector, asyncProvider]);

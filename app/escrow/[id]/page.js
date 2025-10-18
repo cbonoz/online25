@@ -276,7 +276,7 @@ export default function EscrowDetailsPage() {
 
                     <Card title="Transaction Timeline">
                         <Timeline>
-                            {escrowData.events.map((event, index) => (
+                            {(escrowData?.events || []).map((event, index) => (
                                 <Timeline.Item 
                                     key={index}
                                     dot={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
