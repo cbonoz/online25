@@ -6,6 +6,7 @@
   "scripts": {
     "test": "npx hardhat test",
     "build": "npx hardhat compile",
+    "deploy": "yarn deploy:sepolia",
     "deploy:test": "npx hardhat ignition deploy ignition/modules/SafeSendContractTest.ts",
     "deploy:sepolia": "HARDHAT_NETWORK=sepolia npx hardhat ignition deploy --network sepolia ignition/modules/SafeSendContract.ts",
     "deploy:mainnet": "HARDHAT_NETWORK=mainnet npx hardhat ignition deploy --network hardhatMainnet ignition/modules/SafeSendContract.ts"

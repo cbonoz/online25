@@ -1,15 +1,19 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { getDeploymentParams } from "../../config/deployment.js";
 
 export default buildModule("SafeSendContractModule", (m) => {
-  // Get deployment parameters based on current network
-  const deployParams = getDeploymentParams();
+  // Get network from environment or default to sepolia
+  const network = process.env.HARDHAT_NETWORK || process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
   
-  // Get PYUSD token address from config (can still be overridden via parameters)
-  const pyusdTokenAddress = m.getParameter("pyusdToken", deployParams.pyusdToken);
+  // PYUSD token addresses
+  const defaultPyusdAddress = network === 'mainnet'
+    ? '0x6c3ea9036406852006290770BEdFcAbA0e23A0e8' // mainnet address
+    : '0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9'; // sepolia address
   
-  // Set fraud oracle address (can be set via environment variable or parameter)
-  const fraudOracle = m.getParameter("fraudOracle", deployParams.fraudOracle);
+  // Get PYUSD token address from parameters (with network-appropriate default)
+  const pyusdTokenAddress = m.getParameter("pyusdToken", defaultPyusdAddress);
+  
+  // Set fraud oracle address (defaults to zero address if not provided)
+  const fraudOracle = m.getParameter("fraudOracle", process.env.FRAUD_ORACLE_ADDRESS || "0x0000000000000000000000000000000000000000");
   
   // Deploy SafeSend contract with the configured addresses
   const safeSendContract = m.contract("SafeSendContract", [pyusdTokenAddress, fraudOracle]);
