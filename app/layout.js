@@ -1,6 +1,7 @@
 import UiLayoutWrapper from './lib/UiLayoutWrapper';
 import DynamicWrapper from './lib/DynamicWrapper';
 import ErrorBoundary from './lib/ErrorBoundary';
+import BlockscoutProviders from './lib/BlockscoutProviders';
 
 import './globals.css';
 import { siteConfig } from './constants';
@@ -22,7 +23,9 @@ export default function RootLayout({ children }) {
             <body>
                 <ErrorBoundary>
                     <DynamicWrapper>
-                        <UiLayoutWrapper>{children}</UiLayoutWrapper>
+                        <BlockscoutProviders>
+                            <UiLayoutWrapper>{children}</UiLayoutWrapper>
+                        </BlockscoutProviders>
                     </DynamicWrapper>
                 </ErrorBoundary>
             </body>

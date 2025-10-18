@@ -45,6 +45,19 @@ export const getExplorerLink = (address, type = 'address', chainId = ACTIVE_CHAI
     return `${baseUrl}/${type}/${address}`;
 };
 
+// Blockscout SDK configuration
+export const BLOCKSCOUT_CONFIG = {
+    // Current chain ID as string (Blockscout expects string format)
+    chainId: ACTIVE_CHAIN.id.toString(),
+    // Supported chain IDs for Blockscout
+    supportedChains: ['1', '137', '42161', '10', '11155111'], // mainnet, polygon, arbitrum, optimism, sepolia
+    // Check if current chain is supported
+    isSupported: () => {
+        const currentChainId = ACTIVE_CHAIN.id.toString();
+        return BLOCKSCOUT_CONFIG.supportedChains.includes(currentChainId);
+    }
+};
+
 // PYUSD token address (replace with actual addresses)
 export const PYUSD_TOKEN_ADDRESS = NETWORK === 'mainnet'
     ? '0x6c3ea9036406852006290770BEdFcAbA0e23A0e8' // mainnet address

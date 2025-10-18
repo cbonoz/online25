@@ -10,7 +10,9 @@ import {
     WarningOutlined,
     ArrowLeftOutlined,
     EyeOutlined,
-    ExclamationCircleOutlined
+    ExclamationCircleOutlined,
+    HistoryOutlined,
+    LinkOutlined
 } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import { 
@@ -27,7 +29,9 @@ import {
 } from '../../util/safeSendContract';
 import { useWalletClient } from '../../hooks/useWalletClient';
 import { useWalletAddress } from '../../hooks/useWalletAddress';
+import { useBlockscout } from '../../hooks/useBlockscout';
 import DemoModeAlert from '../../lib/DemoModeAlert';
+import { siteConfig, PYUSD_TOKEN_ADDRESS } from '../../constants';
 
 const { Title, Paragraph, Text } = Typography;
 const { Step } = Steps;
@@ -43,6 +47,12 @@ export default function EscrowDetailsPage() {
     const [isFraudOracleActive, setIsFraudOracleActive] = useState(false);
     const walletClient = useWalletClient();
     const { address: walletAddress } = useWalletAddress();
+    const { 
+        showTransactionToast, 
+        showContractTransactions, 
+        showAddressTransactions,
+        showTokenTransactions 
+    } = useBlockscout();
     const mountedRef = useRef(true);
 
     // Cleanup function to prevent memory leaks
@@ -204,6 +214,11 @@ export default function EscrowDetailsPage() {
             message.success('Funds released successfully!');
             console.log('Transaction hash:', hash);
             
+            // Show transaction notification in Blockscout
+            if (hash) {
+                await showTransactionToast(hash);
+            }
+            
             // Refresh escrow data
             window.location.reload();
         } catch (error) {
@@ -231,6 +246,11 @@ export default function EscrowDetailsPage() {
             const hash = await refundEscrow(walletClient, parseInt(params.id));
             message.success('Refund processed successfully!');
             console.log('Transaction hash:', hash);
+            
+            // Show transaction notification in Blockscout
+            if (hash) {
+                await showTransactionToast(hash);
+            }
             
             // Refresh escrow data
             window.location.reload();
@@ -264,6 +284,11 @@ export default function EscrowDetailsPage() {
             const hash = await markFraud(walletClient, parseInt(params.id));
             message.success('Escrow marked as fraudulent and funds refunded to buyer!');
             console.log('Transaction hash:', hash);
+            
+            // Show transaction notification in Blockscout
+            if (hash) {
+                await showTransactionToast(hash);
+            }
             
             // Refresh escrow data
             window.location.reload();
@@ -573,6 +598,41 @@ export default function EscrowDetailsPage() {
                             >
                                 View on Explorer
                             </Button>
+                            
+                            {/* Blockscout Integration Buttons */}
+                            {isContractAvailable() && siteConfig.contractAddress && (
+                                <Button 
+                                    size="large" 
+                                    block
+                                    onClick={() => showContractTransactions(siteConfig.contractAddress)}
+                                    icon={<HistoryOutlined />}
+                                    type="dashed"
+                                >
+                                    Contract Transactions
+                                </Button>
+                            )}
+                            
+                            <Button 
+                                size="large" 
+                                block
+                                onClick={() => showTokenTransactions(PYUSD_TOKEN_ADDRESS)}
+                                icon={<LinkOutlined />}
+                                type="dashed"
+                            >
+                                PYUSD Transactions
+                            </Button>
+                            
+                            {walletAddress && (
+                                <Button 
+                                    size="large" 
+                                    block
+                                    onClick={() => showAddressTransactions(walletAddress)}
+                                    icon={<UserOutlined />}
+                                    type="dashed"
+                                >
+                                    My Transactions
+                                </Button>
+                            )}
                         </Space>
                     </Card>
 

@@ -9,6 +9,7 @@ import { createEscrow, isContractAvailable, isFraudOracleConfigured } from '../u
 import { useWalletClient } from '../hooks/useWalletClient';
 import { useWalletAddress } from '../hooks/useWalletAddress';
 import { useNetworkSwitcher } from '../hooks/useNetworkSwitcher';
+import { useBlockscout } from '../hooks/useBlockscout';
 import { ESCROW_CREATION_STEPS } from '../constants';
 import DemoModeAlert from '../lib/DemoModeAlert';
 import ConnectButton from '../lib/ConnectButton';
@@ -25,6 +26,7 @@ export default function DepositPage() {
     const walletClient = useWalletClient();
     const { address: walletAddress, isConnected, walletType, hasChanged, resetHasChanged } = useWalletAddress();
     const { ensureCorrectNetwork, isCorrectNetwork } = useNetworkSwitcher();
+    const { showTransactionToast } = useBlockscout();
 
     // Debug wallet connection state
     useEffect(() => {
@@ -125,6 +127,12 @@ export default function DepositPage() {
                             
                             message.success('Escrow created successfully!');
                             console.log('Transaction hash:', hash);
+                            
+                            // Show Blockscout transaction notification
+                            if (hash) {
+                                await showTransactionToast(hash);
+                            }
+                            
                             router.push('/my-escrows');
                             return;
                         }
@@ -244,6 +252,11 @@ export default function DepositPage() {
             
             message.success('Escrow created successfully!');
             console.log('Transaction hash:', hash);
+            
+            // Show Blockscout transaction notification
+            if (hash) {
+                await showTransactionToast(hash);
+            }
             
             // Navigate to a transaction status page or back to my-escrows
             router.push('/my-escrows');

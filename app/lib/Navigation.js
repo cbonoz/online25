@@ -6,15 +6,20 @@ import { useRouter, usePathname } from 'next/navigation';
 import { 
     HomeOutlined, 
     PlusOutlined, 
-    InfoCircleOutlined 
+    InfoCircleOutlined,
+    HistoryOutlined
 } from '@ant-design/icons';
 import Logo from './Logo';
+import { useBlockscout } from '../hooks/useBlockscout';
+import { useWalletAddress } from '../hooks/useWalletAddress';
 
 const { Text } = Typography;
 
 export default function Navigation() {
     const router = useRouter();
     const pathname = usePathname();
+    const { showChainTransactions } = useBlockscout();
+    const { address: walletAddress } = useWalletAddress();
 
     // Hide escrow creation tabs on /escrow pages
     const isEscrowPage = pathname.startsWith('/escrow');
@@ -108,6 +113,34 @@ export default function Navigation() {
                             <span style={{ marginLeft: 8 }}>{item.label}</span>
                         </div>
                     ))}
+                    
+                    {/* Blockscout Chain Transactions Button */}
+                    <div
+                        onClick={() => showChainTransactions()}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            color: '#4b5563',
+                            fontWeight: 500,
+                            fontSize: '16px',
+                            opacity: 0.85,
+                            borderBottom: '2px solid transparent',
+                            padding: '8px 0',
+                            transition: 'color 0.2s, opacity 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.closest('div').style.opacity = '1';
+                            e.target.closest('div').style.color = '#00aef2';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.closest('div').style.opacity = '0.85';
+                            e.target.closest('div').style.color = '#4b5563';
+                        }}
+                    >
+                        <HistoryOutlined />
+                        <span style={{ marginLeft: 8 }}>Transactions</span>
+                    </div>
                 </div>
             </div>
         </div>

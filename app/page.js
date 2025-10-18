@@ -6,6 +6,7 @@ import { Button, Spin, Row, Col, Space } from 'antd';
 import { APP_DESC, APP_NAME, siteConfig } from './constants';
 import { CheckCircleTwoTone, LockTwoTone, SafetyCertificateTwoTone, EyeTwoTone } from '@ant-design/icons';
 import Logo from './lib/Logo';
+import BlockscoutDemo from './lib/BlockscoutDemo';
 import { useRouter } from 'next/navigation';
 import { colors } from './theme/colors';
 
@@ -497,15 +498,18 @@ const Home = () => {
 										marginBottom: '16px'
 									}}
 								>
-									Transparent Ledger
+									Blockscout Integration
 								</h3>
 								<p style={{ color: '#6b7280', lineHeight: '1.6' }}>
-									All transactions, deposits, releases, and refunds are logged on-chain and viewable on Blockscout for full auditability
+									Real-time transaction monitoring with instant notifications, comprehensive transaction history, and detailed blockchain explorer integration
 								</p>
 							</div>
 						</Col>
 					</Row>
 				</div>
+
+				{/* Blockscout Integration Demo */}
+				<BlockscoutDemo />
 
 				{/* How It Works Section */}
 				<div style={{ padding: '80px 0', maxWidth: '1800px', margin: '0 auto', backgroundColor: '#f8fafc' }}>

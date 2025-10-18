@@ -35,7 +35,13 @@ PYUSD – PayPal’s regulated stablecoin serves as the payment rail. Because it
 
 Hardhat – Used for contract development, deployment, and verification. Hardhat’s scripting and testing environment made it possible to quickly simulate multiple fraud scenarios, verify contracts on testnets, and emit events compatible with explorer indexing.
 
-Blockscout – Integrated as both a transparency layer and developer tool. Every SafeSend action (deposit, fraud attestation, refund, release) emits an event visible through Blockscout’s explorer and SDK, making the entire fraud arbitration process publicly auditable.
+Blockscout – Integrated as both a transparency layer and developer tool using the official Blockscout SDK (@blockscout/app-sdk). Every SafeSend action (deposit, fraud attestation, refund, release) emits an event visible through Blockscout's explorer and SDK, making the entire fraud arbitration process publicly auditable.
+
+**Blockscout SDK Integration Features:**
+- **Real-time Transaction Notifications** – Toast notifications with pending/success/error states appear instantly for all escrow operations (create, release, refund, fraud marking)
+- **Transaction History Popups** – Interactive popups allow users to view complete transaction history for contracts, wallet addresses, and PYUSD token transfers
+- **Contract Activity Monitoring** – Dedicated buttons throughout the app to view SafeSend contract transactions in real-time
+- **PYUSD Transaction Tracking** – Direct access to PYUSD token transaction history via integrated explorer
 
 The contract is written in Solidity, deployed on Ethereum testnets, and uses a single shared escrow logic that supports multiple businesses. Each business registers its own oracle for fraud attestations, allowing scalable participation without redeploying new contracts.
 
@@ -57,6 +63,45 @@ In essence, SafeSend combines on-chain logic, stablecoin security, and open atte
 3. **Fraud Detection** – Fraud oracle or attestation flags the transaction if fraudulent.
 4. **Contract Enforcement** – Contract automatically allows `refund()` for buyer or blocks `release()` for seller.
 5. **Event Transparency** – All actions are logged and verifiable on-chain.
+
+### Blockscout SDK Integration Points
+
+The Blockscout SDK is integrated throughout the SafeSend application to provide real-time transaction monitoring and instant explorer feedback:
+
+**1. Transaction Toast Notifications**
+- Automatically triggered after every escrow operation (create, release, refund, fraud marking)
+- Shows real-time transaction status (pending → success/error)
+- Displays transaction interpretation and summaries
+- Links directly to Blockscout explorer for detailed view
+- Implements automatic status polling for confirmation updates
+
+**2. Transaction History Popups**
+- **Global Navigation**: "Transactions" button in main navigation opens chain-wide activity
+- **Escrow Details Page**: Three dedicated buttons for Contract/PYUSD/User transaction history
+- **My Escrows Page**: Transaction monitoring card with quick access to all activity types
+- **Main Page**: Interactive demo section showcasing Blockscout integration features
+
+**3. Technical Implementation**
+```
+app/
+  lib/
+    BlockscoutProviders.js   # SDK providers wrapper (NotificationProvider + TransactionPopupProvider)
+    BlockscoutDemo.js        # Interactive demo component for main page
+  hooks/
+    useBlockscout.js         # Custom hook wrapping SDK with app-specific configuration
+  escrow/
+    [id]/page.js            # Transaction notifications + history buttons on escrow details
+    page.js                 # Transaction notifications on escrow creation
+  my-escrows/
+    page.js                 # Transaction monitoring card with activity viewers
+```
+
+**4. User Experience Flow**
+- User creates escrow → Instant toast notification with transaction status
+- User views escrow details → Quick access buttons to view contract/token/wallet history
+- User releases/refunds → Real-time notification with confirmation status
+- User explores transactions → One-click access to comprehensive Blockscout explorer data
+
 
 ## Fraud Oracle Architecture
 

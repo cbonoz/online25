@@ -8,7 +8,9 @@ import {
     SafetyCertificateTwoTone, 
     ClockCircleOutlined,
     CheckCircleOutlined,
-    ExclamationCircleOutlined
+    ExclamationCircleOutlined,
+    HistoryOutlined,
+    LinkOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { APP_NAME } from '../constants';
@@ -22,7 +24,9 @@ import {
     isFraudOracleConfigured
 } from '../util/safeSendContract';
 import { useWalletAddress } from '../hooks/useWalletAddress';
+import { useBlockscout } from '../hooks/useBlockscout';
 import DemoModeAlert from '../lib/DemoModeAlert';
+import { siteConfig, PYUSD_TOKEN_ADDRESS } from '../constants';
 
 const { Title, Paragraph, Text } = Typography;
 const { TabPane } = Tabs;
@@ -36,6 +40,11 @@ export default function MyEscrowsPage() {
     const [isUserFraudOracle, setIsUserFraudOracle] = useState(false);
     const [isFraudOracleActive, setIsFraudOracleActive] = useState(false);
     const { address: walletAddress } = useWalletAddress();
+    const { 
+        showContractTransactions, 
+        showAddressTransactions,
+        showTokenTransactions 
+    } = useBlockscout();
 
     // Load escrows from contract if available
     useEffect(() => {
@@ -344,6 +353,45 @@ export default function MyEscrowsPage() {
             </div>
 
             <DemoModeAlert />
+
+            {/* Blockscout Transaction Monitoring */}
+            <Card 
+                title="Transaction Monitoring" 
+                size="small" 
+                style={{ marginBottom: '16px' }}
+                actions={[
+                    <Button 
+                        key="contract" 
+                        type="link" 
+                        icon={<HistoryOutlined />}
+                        onClick={() => isContractAvailable() && siteConfig.contractAddress && showContractTransactions(siteConfig.contractAddress)}
+                        disabled={!isContractAvailable() || !siteConfig.contractAddress}
+                    >
+                        Contract Activity
+                    </Button>,
+                    <Button 
+                        key="pyusd" 
+                        type="link" 
+                        icon={<LinkOutlined />}
+                        onClick={() => showTokenTransactions(PYUSD_TOKEN_ADDRESS)}
+                    >
+                        PYUSD Transactions
+                    </Button>,
+                    <Button 
+                        key="wallet" 
+                        type="link" 
+                        icon={<EyeOutlined />}
+                        onClick={() => walletAddress && showAddressTransactions(walletAddress)}
+                        disabled={!walletAddress}
+                    >
+                        My Wallet Activity
+                    </Button>
+                ]}
+            >
+                <Text type="secondary">
+                    Monitor real-time transaction activity powered by Blockscout explorer integration
+                </Text>
+            </Card>
 
             {!isFraudOracleActive && isContractAvailable() && (
                 <Alert
