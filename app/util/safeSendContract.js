@@ -337,3 +337,66 @@ export const getFraudOracle = async () => {
         throw error;
     }
 };
+
+// Mark escrow as fraudulent (fraud oracle only)
+export const markFraud = async (walletClient, escrowId) => {
+    try {
+        if (!isContractAvailable()) {
+            throw new Error('Contract not available - running in demo mode');
+        }
+
+        const contractAddress = getContractAddress();
+        
+        const hash = await walletClient.writeContract({
+            address: contractAddress,
+            abi: SAFESEND_CONTRACT.abi,
+            functionName: 'markFraud',
+            args: [escrowId]
+        });
+
+        return hash;
+    } catch (error) {
+        console.error('Error marking fraud:', error);
+        handleContractError(error, 'mark fraud');
+        throw error;
+    }
+};
+
+// Update fraud oracle (owner only)
+export const updateFraudOracle = async (walletClient, newOracleAddress) => {
+    try {
+        if (!isContractAvailable()) {
+            throw new Error('Contract not available - running in demo mode');
+        }
+
+        const contractAddress = getContractAddress();
+        
+        const hash = await walletClient.writeContract({
+            address: contractAddress,
+            abi: SAFESEND_CONTRACT.abi,
+            functionName: 'updateFraudOracle',
+            args: [newOracleAddress]
+        });
+
+        return hash;
+    } catch (error) {
+        console.error('Error updating fraud oracle:', error);
+        handleContractError(error, 'update fraud oracle');
+        throw error;
+    }
+};
+
+// Check if current wallet is the fraud oracle
+export const isFraudOracle = async (walletAddress) => {
+    try {
+        if (!isContractAvailable() || !walletAddress) {
+            return false;
+        }
+
+        const oracleAddress = await getFraudOracle();
+        return oracleAddress.toLowerCase() === walletAddress.toLowerCase();
+    } catch (error) {
+        console.error('Error checking if fraud oracle:', error);
+        return false;
+    }
+};

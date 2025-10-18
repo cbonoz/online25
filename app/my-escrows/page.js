@@ -17,7 +17,8 @@ import {
     getBuyerEscrows, 
     getSellerEscrows,
     EscrowStatus,
-    getStatusText as getContractStatusText
+    getStatusText as getContractStatusText,
+    isFraudOracle
 } from '../util/safeSendContract';
 import { useWalletAddress } from '../hooks/useWalletAddress';
 import DemoModeAlert from '../lib/DemoModeAlert';
@@ -31,6 +32,7 @@ export default function MyEscrowsPage() {
     const [escrows, setEscrows] = useState([]);
     const [buyerEscrows, setBuyerEscrows] = useState([]);
     const [sellerEscrows, setSellerEscrows] = useState([]);
+    const [isUserFraudOracle, setIsUserFraudOracle] = useState(false);
     const { address: walletAddress } = useWalletAddress();
 
     // Load escrows from contract if available
@@ -101,6 +103,26 @@ export default function MyEscrowsPage() {
         };
 
         loadEscrows();
+    }, [walletAddress]);
+
+    // Check if user is fraud oracle
+    useEffect(() => {
+        const checkFraudOracle = async () => {
+            if (!walletAddress) {
+                setIsUserFraudOracle(false);
+                return;
+            }
+            
+            try {
+                const isOracle = await isFraudOracle(walletAddress);
+                setIsUserFraudOracle(isOracle);
+            } catch (error) {
+                console.error('Error checking fraud oracle status:', error);
+                setIsUserFraudOracle(false);
+            }
+        };
+        
+        checkFraudOracle();
     }, [walletAddress]);
 
     // Mock escrow data - in production this would come from blockchain
@@ -252,9 +274,16 @@ export default function MyEscrowsPage() {
             dataIndex: 'status',
             key: 'status',
             render: (status, record) => (
-                <Tag color={getStatusColor(status)}>
-                    {getStatusText(status, record.statusText)}
-                </Tag>
+                <Space>
+                    <Tag color={getStatusColor(status)}>
+                        {getStatusText(status, record.statusText)}
+                    </Tag>
+                    {record.fraudFlagged && (
+                        <Tag color="red" icon={<ExclamationCircleOutlined />} size="small">
+                            Fraud
+                        </Tag>
+                    )}
+                </Space>
             )
         },
         {
@@ -290,7 +319,14 @@ export default function MyEscrowsPage() {
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
             <div style={{ marginBottom: '32px' }}>
-                <Title level={1}>My Escrows</Title>
+                <Space align="center" style={{ marginBottom: '16px' }}>
+                    <Title level={1} style={{ margin: 0 }}>My Escrows</Title>
+                    {isUserFraudOracle && (
+                        <Tag color="purple" icon={<SafetyCertificateTwoTone />}>
+                            Fraud Oracle
+                        </Tag>
+                    )}
+                </Space>
                 <Paragraph style={{ fontSize: '16px', color: '#666' }}>
                     Manage your PYUSD escrow transactions with built-in fraud protection
                 </Paragraph>
@@ -361,6 +397,40 @@ export default function MyEscrowsPage() {
                         />
                     </Card>
                 </TabPane>
+
+                {isUserFraudOracle && (
+                    <TabPane 
+                        tab={
+                            <Space>
+                                <SafetyCertificateTwoTone />
+                                Oracle Functions
+                            </Space>
+                        } 
+                        key="oracle"
+                    >
+                        <Card title="Fraud Oracle Dashboard" size="small">
+                            <Alert
+                                message="Fraud Oracle Access"
+                                description="You have fraud oracle permissions. You can monitor and flag fraudulent escrows."
+                                type="info"
+                                showIcon
+                                style={{ marginBottom: '16px' }}
+                            />
+                            <Paragraph>
+                                As a fraud oracle, you can:
+                            </Paragraph>
+                            <ul>
+                                <li>Monitor all escrow transactions</li>
+                                <li>Mark fraudulent escrows (triggers automatic refund)</li>
+                                <li>Initiate refunds on behalf of buyers</li>
+                            </ul>
+                            <Paragraph type="secondary">
+                                All escrows with active status are available for fraud monitoring.
+                                Click "View Details" on any escrow to access oracle functions.
+                            </Paragraph>
+                        </Card>
+                    </TabPane>
+                )}
             </Tabs>
         </div>
     );

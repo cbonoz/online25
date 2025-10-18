@@ -18,7 +18,10 @@ import {
     refundEscrow, 
     isContractAvailable,
     EscrowStatus,
-    getStatusText as getContractStatusText
+    getStatusText as getContractStatusText,
+    getFraudOracle,
+    markFraud,
+    isFraudOracle
 } from '../../util/safeSendContract';
 import { useWalletClient } from '../../hooks/useWalletClient';
 import { useWalletAddress } from '../../hooks/useWalletAddress';
@@ -32,6 +35,8 @@ export default function EscrowDetailsPage() {
     const params = useParams();
     const [loading, setLoading] = useState(false);
     const [escrowData, setEscrowData] = useState(null);
+    const [fraudOracleAddress, setFraudOracleAddress] = useState(null);
+    const [isUserFraudOracle, setIsUserFraudOracle] = useState(false);
     const walletClient = useWalletClient();
     const { address: walletAddress } = useWalletAddress();
 
@@ -84,6 +89,30 @@ export default function EscrowDetailsPage() {
 
         loadEscrowData();
     }, [params.id]);
+
+    // Load fraud oracle information
+    useEffect(() => {
+        const loadFraudOracleInfo = async () => {
+            if (!isContractAvailable() || !walletAddress) {
+                // Demo mode - mock fraud oracle
+                setFraudOracleAddress('0x9876543210fedcba9876543210fedcba98765432');
+                setIsUserFraudOracle(false);
+                return;
+            }
+
+            try {
+                const oracleAddress = await getFraudOracle();
+                setFraudOracleAddress(oracleAddress);
+                
+                const isOracle = await isFraudOracle(walletAddress);
+                setIsUserFraudOracle(isOracle);
+            } catch (error) {
+                console.error('Error loading fraud oracle info:', error);
+            }
+        };
+
+        loadFraudOracleInfo();
+    }, [walletAddress]);
 
     const handleRelease = async () => {
         if (!isContractAvailable()) {
@@ -141,6 +170,39 @@ export default function EscrowDetailsPage() {
         }
     };
 
+    const handleMarkFraud = async () => {
+        if (!isContractAvailable()) {
+            message.info('Running in demo mode - would mark fraud in production');
+            return;
+        }
+
+        if (!walletClient) {
+            message.error('Please connect your wallet first');
+            return;
+        }
+
+        if (!isUserFraudOracle) {
+            message.error('Only the fraud oracle can mark escrows as fraudulent');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            console.log('Marking fraud for escrow:', params.id);
+            const hash = await markFraud(walletClient, parseInt(params.id));
+            message.success('Escrow marked as fraudulent and funds refunded to buyer!');
+            console.log('Transaction hash:', hash);
+            
+            // Refresh escrow data
+            window.location.reload();
+        } catch (error) {
+            console.error('Mark fraud failed:', error);
+            message.error(error.message || 'Failed to mark fraud');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getStatusColor = (status) => {
         // Handle both numeric (contract) and string (mock) status values
         if (typeof status === 'number') {
@@ -152,15 +214,42 @@ export default function EscrowDetailsPage() {
                 default: return 'default';
             }
         } else {
-            // Legacy string format
+            // Legacy string format for mock data
             switch (status) {
                 case 'active': return 'blue';
+                case 'pending_release': return 'orange';
                 case 'completed': return 'green';
-                case 'refunded': return 'red';
-                case 'fraud_flagged': return 'red';
                 default: return 'default';
             }
         }
+    };
+
+    // Helper functions to determine user roles
+    const isBuyer = () => {
+        return walletAddress && escrowData && 
+               walletAddress.toLowerCase() === escrowData.buyer.toLowerCase();
+    };
+
+    const isSeller = () => {
+        return walletAddress && escrowData && 
+               walletAddress.toLowerCase() === escrowData.seller.toLowerCase();
+    };
+
+    const canRelease = () => {
+        return isBuyer() && escrowData && 
+               (escrowData.status === EscrowStatus.Active || escrowData.status === 'active') &&
+               !escrowData.fraudFlagged;
+    };
+
+    const canRefund = () => {
+        return (isBuyer() || isUserFraudOracle) && escrowData && 
+               (escrowData.status === EscrowStatus.Active || escrowData.status === 'active');
+    };
+
+    const canMarkFraud = () => {
+        return isUserFraudOracle && escrowData && 
+               (escrowData.status === EscrowStatus.Active || escrowData.status === 'active') &&
+               !escrowData.fraudFlagged;
     };
 
     const getStatusText = (status, statusText) => {
@@ -178,31 +267,6 @@ export default function EscrowDetailsPage() {
                 default: return status;
             }
         }
-    };
-
-    const canRelease = () => {
-        if (!escrowData || !walletAddress) return false;
-        
-        // Only buyer can release funds and only if escrow is active
-        const isBuyer = walletAddress.toLowerCase() === escrowData.buyer.toLowerCase();
-        const isActive = (typeof escrowData.status === 'number') 
-            ? escrowData.status === EscrowStatus.Active 
-            : escrowData.status === 'active';
-            
-        return isBuyer && isActive && !escrowData.fraudFlagged;
-    };
-
-    const canRefund = () => {
-        if (!escrowData || !walletAddress) return false;
-        
-        // Both buyer and seller can request refund if escrow is active
-        const isBuyer = walletAddress.toLowerCase() === escrowData.buyer.toLowerCase();
-        const isSeller = walletAddress.toLowerCase() === escrowData.seller.toLowerCase();
-        const isActive = (typeof escrowData.status === 'number') 
-            ? escrowData.status === EscrowStatus.Active 
-            : escrowData.status === 'active';
-            
-        return (isBuyer || isSeller) && isActive;
     };
 
     if (!escrowData) {
@@ -248,10 +312,16 @@ export default function EscrowDetailsPage() {
                                 </Space>
                             </Descriptions.Item>
                             <Descriptions.Item label="Buyer">
-                                <Text code>{escrowData.buyer}</Text>
+                                <Space>
+                                    <Text code>{escrowData.buyer}</Text>
+                                    {isBuyer() && <Tag color="blue" size="small">You</Tag>}
+                                </Space>
                             </Descriptions.Item>
                             <Descriptions.Item label="Seller">
-                                <Text code>{escrowData.seller}</Text>
+                                <Space>
+                                    <Text code>{escrowData.seller}</Text>
+                                    {isSeller() && <Tag color="green" size="small">You</Tag>}
+                                </Space>
                             </Descriptions.Item>
                             <Descriptions.Item label="Description">
                                 <Text>{escrowData.description}</Text>
@@ -330,6 +400,19 @@ export default function EscrowDetailsPage() {
                                     Request Refund
                                 </Button>
                             )}
+                            {canMarkFraud() && (
+                                <Button 
+                                    danger 
+                                    size="large" 
+                                    block
+                                    onClick={handleMarkFraud}
+                                    loading={loading}
+                                    icon={<WarningOutlined />}
+                                    type="dashed"
+                                >
+                                    Mark as Fraud
+                                </Button>
+                            )}
                             <Button 
                                 size="large" 
                                 block
@@ -347,13 +430,27 @@ export default function EscrowDetailsPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <SafetyCertificateTwoTone twoToneColor="#52c41a" style={{ fontSize: '16px' }} />
                                 <Text>Oracle monitoring active</Text>
+                                {isUserFraudOracle && (
+                                    <Tag color="blue" size="small">You are the fraud oracle</Tag>
+                                )}
                             </div>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                                Fraud oracle: <Text code>{escrowData.oracleAddress}</Text>
-                            </Text>
+                            {fraudOracleAddress && (
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    Fraud oracle: <Text code>{fraudOracleAddress.slice(0, 6)}...{fraudOracleAddress.slice(-4)}</Text>
+                                </Text>
+                            )}
                             <Text type="secondary" style={{ fontSize: '12px' }}>
                                 Automatic refund if fraud detected
                             </Text>
+                            {escrowData.fraudFlagged && (
+                                <Alert
+                                    message="Fraud Detected"
+                                    description="This escrow has been flagged as fraudulent by the oracle"
+                                    type="error"
+                                    showIcon
+                                    size="small"
+                                />
+                            )}
                         </Space>
                     </Card>
                 </div>
