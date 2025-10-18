@@ -14,7 +14,7 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
     IERC20 public immutable pyusdToken;
     address public fraudOracle;
     
-    uint256 public escrowCounter;
+    uint256 public escrowCounter = 10000; // Start IDs at 10000 for better UX.
     
     enum EscrowStatus {
         Active,

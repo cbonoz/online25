@@ -207,8 +207,9 @@ export const getEscrow = async (escrowId) => {
         };
     } catch (error) {
         console.error('Error getting escrow:', error);
+        // Handle the error and throw the processed error message
         handleContractError(error, 'get escrow');
-        throw error;
+        // Don't throw the original error again, handleContractError already throws
     }
 };
 

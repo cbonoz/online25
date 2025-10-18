@@ -361,6 +361,23 @@ export const handleContractError = (error, operationName = 'transaction') => {
 		throw new Error('Insufficient contract balance for this operation.');
 	}
 
+	// Escrow-specific errors
+	if (errorMessage.includes('Escrow does not exist')) {
+		throw new Error('Escrow does not exist');
+	}
+	if (errorMessage.includes('Only buyer can call this')) {
+		throw new Error('Only the buyer can perform this action.');
+	}
+	if (errorMessage.includes('Only seller can call this')) {
+		throw new Error('Only the seller can perform this action.');
+	}
+	if (errorMessage.includes('Escrow is not active')) {
+		throw new Error('This escrow is no longer active.');
+	}
+	if (errorMessage.includes('Only fraud oracle can call this')) {
+		throw new Error('Only the fraud oracle can perform this action.');
+	}
+
 	// Funding and balance errors
 	if (
 		errorMessage.includes('insufficient funds') ||

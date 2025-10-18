@@ -58,6 +58,34 @@ In essence, SafeSend combines on-chain logic, stablecoin security, and open atte
 4. **Contract Enforcement** – Contract automatically allows `refund()` for buyer or blocks `release()` for seller.
 5. **Event Transparency** – All actions are logged and verifiable on-chain.
 
+## Fraud Oracle Architecture
+
+**The fraud oracle is configured per deployment of the SafeSendContract.** This means each instance of the contract has a single, global fraud oracle address that handles all escrows within that contract deployment.
+
+### Key Design Decisions:
+
+1. **Global Oracle Model** – One fraud oracle per contract deployment, not per individual escrow
+2. **Constructor Configuration** – The oracle address is set during contract deployment and cannot be changed afterward
+3. **Shared Authority** – The designated oracle can mark any escrow as fraudulent within the contract instance
+4. **Business Flexibility** – Different businesses can deploy their own contract instances with their preferred oracle
+
+### Deployment Options:
+
+- **Self-Managed Oracle**: Deploy with your own oracle address for full control
+- **Third-Party Oracle**: Use a trusted external fraud detection service
+- **Multi-Sig Oracle**: Deploy with a multi-signature wallet as the oracle for distributed decision-making
+- **Demo Mode**: Deploy with a test address for development and testing
+
+### Business Implications:
+
+This architecture allows businesses to:
+- Choose their preferred fraud detection method
+- Maintain control over dispute resolution
+- Scale without per-escrow oracle complexity
+- Integrate with existing fraud prevention systems
+
+The oracle address is publicly visible and auditable, ensuring transparency in the fraud detection process. Users can verify which oracle is responsible for fraud decisions before participating in escrows.
+
 ## Why this can be trusted
 
 Code is open and verifiable – The smart contract is fully deployed and auditable on Blockscout or Etherscan. Users can see exactly how funds are handled.

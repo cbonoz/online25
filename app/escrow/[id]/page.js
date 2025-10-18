@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Space, Button, Alert, Tag, Descriptions, Steps, Timeline, message } from 'antd';
 import { 
     DollarOutlined, 
@@ -9,7 +9,8 @@ import {
     CheckCircleOutlined,
     WarningOutlined,
     ArrowLeftOutlined,
-    EyeOutlined
+    EyeOutlined,
+    ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import { 
@@ -34,42 +35,70 @@ const { Step } = Steps;
 export default function EscrowDetailsPage() {
     const router = useRouter();
     const params = useParams();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true); // Start with loading true
     const [escrowData, setEscrowData] = useState(null);
+    const [error, setError] = useState(null);
     const [fraudOracleAddress, setFraudOracleAddress] = useState(null);
     const [isUserFraudOracle, setIsUserFraudOracle] = useState(false);
     const [isFraudOracleActive, setIsFraudOracleActive] = useState(false);
     const walletClient = useWalletClient();
     const { address: walletAddress } = useWalletAddress();
+    const mountedRef = useRef(true);
+
+    // Cleanup function to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
     // Load escrow data from contract or mock data
     useEffect(() => {
+        // Don't load if no escrow ID
+        if (!params.id) {
+            console.log('No params.id, skipping load');
+            return;
+        }
+
+        // Prevent multiple concurrent loads for the same ID
+        let isCancelled = false;
+
         const loadEscrowData = async () => {
+            if (mountedRef.current && !isCancelled) {
+                setLoading(true);
+                setError(null);
+            }
+            
             if (!isContractAvailable()) {
                 // Use mock data in demo mode
                 setTimeout(() => {
-                    setEscrowData({
-                        id: params.id || 'escrow-1',
-                        amount: '500.00',
-                        buyer: '0x1234567890abcdef1234567890abcdef12345678',
-                        seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
-                        status: EscrowStatus.Active,
-                        statusText: 'Active',
-                        description: 'Website development project - Full stack e-commerce platform',
-                        createdAt: '2025-01-10T14:30:00Z',
-                        lastUpdated: '2025-01-10T14:30:00Z',
-                        txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-                        oracleAddress: '0x9876543210fedcba9876543210fedcba98765432',
-                        fraudFlagged: false,
-                        events: [
-                            {
-                                type: 'Deposited',
-                                timestamp: '2025-01-10T14:30:00Z',
-                                description: 'PYUSD deposited into escrow contract',
-                                txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
-                            }
-                        ]
-                    });
+                    if (mountedRef.current && !isCancelled) {
+                        setEscrowData({
+                            id: params.id || 'escrow-1',
+                            amount: '500.00',
+                            buyer: '0x1234567890abcdef1234567890abcdef12345678',
+                            seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
+                            status: EscrowStatus.Active,
+                            statusText: 'Active',
+                            description: 'Website development project - Full stack e-commerce platform',
+                            createdAt: '2025-01-10T14:30:00Z',
+                            lastUpdated: '2025-01-10T14:30:00Z',
+                            txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+                            oracleAddress: '0x9876543210fedcba9876543210fedcba98765432',
+                            fraudFlagged: false,
+                            events: [
+                                {
+                                    type: 'Deposited',
+                                    timestamp: '2025-01-10T14:30:00Z',
+                                    description: 'PYUSD deposited into escrow contract',
+                                    txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+                                }
+                            ]
+                        });
+                    }
+                    if (mountedRef.current && !isCancelled) {
+                        setLoading(false);
+                    }
                 }, 1000);
                 return;
             }
@@ -77,20 +106,49 @@ export default function EscrowDetailsPage() {
             // Try to load from contract
             try {
                 const escrowId = parseInt(params.id);
-                if (isNaN(escrowId)) {
-                    throw new Error('Invalid escrow ID');
+                
+                if (isNaN(escrowId) || escrowId <= 0) {
+                    throw new Error(`Invalid escrow ID: ${params.id}. Please provide a valid numeric escrow ID.`);
                 }
                 
                 const data = await getEscrow(escrowId);
-                setEscrowData(data);
+                
+                if (mountedRef.current && !isCancelled) {
+                    setEscrowData(data);
+                    setError(null);
+                }
             } catch (error) {
-                console.error('Error loading escrow data:', error);
-                message.error('Failed to load escrow data');
+                // Handle specific error types
+                let errorMessage = 'Failed to load escrow data';
+                
+                if (error.message.includes('Escrow does not exist')) {
+                    errorMessage = `Escrow #${params.id} does not exist. Please check the escrow ID and try again.`;
+                } else if (error.message.includes('Invalid escrow ID')) {
+                    errorMessage = error.message;
+                } else if (error.message.includes('Contract not available')) {
+                    errorMessage = 'Contract is not available. Please try again later.';
+                } else {
+                    errorMessage = `Error loading escrow: ${error.message}`;
+                }
+                
+                if (mountedRef.current && !isCancelled) {
+                    setError(errorMessage);
+                    setEscrowData(null);
+                }
+            } finally {
+                if (mountedRef.current && !isCancelled) {
+                    setLoading(false);
+                }
             }
         };
 
         loadEscrowData();
-    }, [params.id]);
+        
+        // Return cleanup function
+        return () => {
+            isCancelled = true;
+        };
+    }, [params.id]); // Only depend on params.id
 
     // Load fraud oracle information
     useEffect(() => {
@@ -283,6 +341,86 @@ export default function EscrowDetailsPage() {
         }
     };
 
+    // Handle loading state
+    if (loading) {
+        return (
+            <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 24px' }}>
+                <div style={{ marginBottom: '24px' }}>
+                    <Button 
+                        icon={<ArrowLeftOutlined />} 
+                        onClick={() => router.push('/my-escrows')}
+                        style={{ marginBottom: '16px' }}
+                    >
+                        Back to My Escrows
+                    </Button>
+                </div>
+                <Card loading={true} style={{ minHeight: '400px' }} />
+            </div>
+        );
+    }
+
+    // Handle error state
+    if (error) {
+        return (
+            <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 24px' }}>
+                <div style={{ marginBottom: '24px' }}>
+                    <Button 
+                        icon={<ArrowLeftOutlined />} 
+                        onClick={() => router.push('/my-escrows')}
+                        style={{ marginBottom: '16px' }}
+                    >
+                        Back to My Escrows
+                    </Button>
+                </div>
+                
+                <Card>
+                    <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                        <ExclamationCircleOutlined 
+                            style={{ fontSize: '64px', color: '#ff4d4f', marginBottom: '24px' }} 
+                        />
+                        <Title level={3} type="danger">Escrow #{params.id} Not Found</Title>
+                        <Paragraph style={{ fontSize: '16px', marginBottom: '24px' }}>
+                            {error}
+                        </Paragraph>
+                        
+                        {error.includes('Escrow does not exist') && (
+                            <Alert
+                                message="Escrow ID Not Found"
+                                description="This escrow ID may not exist yet, or it might have been created on a different network. Make sure you're on the correct network and the escrow ID is valid."
+                                type="info"
+                                showIcon
+                                style={{ marginBottom: '24px', textAlign: 'left' }}
+                            />
+                        )}
+                        
+                        <Space>
+                            <Button 
+                                type="primary" 
+                                onClick={() => router.push('/my-escrows')}
+                                icon={<ArrowLeftOutlined />}
+                            >
+                                View My Escrows
+                            </Button>
+                            <Button 
+                                onClick={() => router.push('/escrow')}
+                                icon={<DollarOutlined />}
+                            >
+                                Create New Escrow
+                            </Button>
+                            <Button 
+                                onClick={() => window.location.reload()}
+                                loading={loading}
+                            >
+                                Retry
+                            </Button>
+                        </Space>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
+    // Handle case where no data and no error (shouldn't happen, but safety check)
     if (!escrowData) {
         return (
             <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 24px' }}>
@@ -301,8 +439,7 @@ export default function EscrowDetailsPage() {
                 >
                     Back to My Escrows
                 </Button>
-                <Title level={1}>Escrow Details</Title>
-                <Text code style={{ fontSize: '16px' }}>{escrowData.id}</Text>
+                {/* <Text code style={{ fontSize: '16px' }}>{escrowData.id}</Text> */}
             </div>
 
             <DemoModeAlert 
