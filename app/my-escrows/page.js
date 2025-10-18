@@ -18,7 +18,8 @@ import {
     getSellerEscrows,
     EscrowStatus,
     getStatusText as getContractStatusText,
-    isFraudOracle
+    isFraudOracle,
+    isFraudOracleConfigured
 } from '../util/safeSendContract';
 import { useWalletAddress } from '../hooks/useWalletAddress';
 import DemoModeAlert from '../lib/DemoModeAlert';
@@ -33,6 +34,7 @@ export default function MyEscrowsPage() {
     const [buyerEscrows, setBuyerEscrows] = useState([]);
     const [sellerEscrows, setSellerEscrows] = useState([]);
     const [isUserFraudOracle, setIsUserFraudOracle] = useState(false);
+    const [isFraudOracleActive, setIsFraudOracleActive] = useState(false);
     const { address: walletAddress } = useWalletAddress();
 
     // Load escrows from contract if available
@@ -110,15 +112,24 @@ export default function MyEscrowsPage() {
         const checkFraudOracle = async () => {
             if (!walletAddress) {
                 setIsUserFraudOracle(false);
+                setIsFraudOracleActive(false);
                 return;
             }
             
             try {
-                const isOracle = await isFraudOracle(walletAddress);
-                setIsUserFraudOracle(isOracle);
+                const isConfigured = await isFraudOracleConfigured();
+                setIsFraudOracleActive(isConfigured);
+                
+                if (isConfigured) {
+                    const isOracle = await isFraudOracle(walletAddress);
+                    setIsUserFraudOracle(isOracle);
+                } else {
+                    setIsUserFraudOracle(false);
+                }
             } catch (error) {
                 console.error('Error checking fraud oracle status:', error);
                 setIsUserFraudOracle(false);
+                setIsFraudOracleActive(false);
             }
         };
         
@@ -334,6 +345,16 @@ export default function MyEscrowsPage() {
 
             <DemoModeAlert />
 
+            {!isFraudOracleActive && isContractAvailable() && (
+                <Alert
+                    message="No Fraud Oracle Configured"
+                    description="The contract owner has not configured a fraud oracle. Fraud protection features are disabled."
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: '16px' }}
+                />
+            )}
+
             <Tabs defaultActiveKey="active" size="large"
                 loading={loading}
             >
@@ -398,7 +419,7 @@ export default function MyEscrowsPage() {
                     </Card>
                 </TabPane>
 
-                {isUserFraudOracle && (
+                {isUserFraudOracle && isFraudOracleActive && (
                     <TabPane 
                         tab={
                             <Space>

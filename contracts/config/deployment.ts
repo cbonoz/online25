@@ -24,12 +24,12 @@ export const CHAIN_CONFIG = {
 };
 
 // Get deployment parameters for the current network
-export function getDeploymentParams(network: string = NETWORK) {
+export function getDeploymentParams(network: string = NETWORK, fraudOracleAddress?: string) {
     const config = CHAIN_CONFIG[network as keyof typeof CHAIN_CONFIG] || CHAIN_CONFIG.sepolia;
     
     return {
         pyusdToken: config.pyusdAddress,
-        fraudOracle: process.env.FRAUD_ORACLE_ADDRESS || '0x0000000000000000000000000000000000000000', // Zero address disables oracle
+        fraudOracle: fraudOracleAddress || '0x0000000000000000000000000000000000000000', // Zero address disables oracle
         network: config.name,
         chainId: config.chainId
     };

@@ -21,7 +21,8 @@ import {
     getStatusText as getContractStatusText,
     getFraudOracle,
     markFraud,
-    isFraudOracle
+    isFraudOracle,
+    isFraudOracleConfigured
 } from '../../util/safeSendContract';
 import { useWalletClient } from '../../hooks/useWalletClient';
 import { useWalletAddress } from '../../hooks/useWalletAddress';
@@ -37,6 +38,7 @@ export default function EscrowDetailsPage() {
     const [escrowData, setEscrowData] = useState(null);
     const [fraudOracleAddress, setFraudOracleAddress] = useState(null);
     const [isUserFraudOracle, setIsUserFraudOracle] = useState(false);
+    const [isFraudOracleActive, setIsFraudOracleActive] = useState(false);
     const walletClient = useWalletClient();
     const { address: walletAddress } = useWalletAddress();
 
@@ -97,17 +99,29 @@ export default function EscrowDetailsPage() {
                 // Demo mode - mock fraud oracle
                 setFraudOracleAddress('0x9876543210fedcba9876543210fedcba98765432');
                 setIsUserFraudOracle(false);
+                setIsFraudOracleActive(true);
                 return;
             }
 
             try {
-                const oracleAddress = await getFraudOracle();
-                setFraudOracleAddress(oracleAddress);
+                const isConfigured = await isFraudOracleConfigured();
+                setIsFraudOracleActive(isConfigured);
                 
-                const isOracle = await isFraudOracle(walletAddress);
-                setIsUserFraudOracle(isOracle);
+                if (isConfigured) {
+                    const oracleAddress = await getFraudOracle();
+                    setFraudOracleAddress(oracleAddress);
+                    
+                    const isOracle = await isFraudOracle(walletAddress);
+                    setIsUserFraudOracle(isOracle);
+                } else {
+                    setFraudOracleAddress(null);
+                    setIsUserFraudOracle(false);
+                }
             } catch (error) {
                 console.error('Error loading fraud oracle info:', error);
+                setIsFraudOracleActive(false);
+                setFraudOracleAddress(null);
+                setIsUserFraudOracle(false);
             }
         };
 
@@ -428,20 +442,32 @@ export default function EscrowDetailsPage() {
                     <Card title="Fraud Protection" size="small">
                         <Space direction="vertical" style={{ width: '100%' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <SafetyCertificateTwoTone twoToneColor="#52c41a" style={{ fontSize: '16px' }} />
-                                <Text>Oracle monitoring active</Text>
+                                <SafetyCertificateTwoTone 
+                                    twoToneColor={isFraudOracleActive ? "#52c41a" : "#d9d9d9"} 
+                                    style={{ fontSize: '16px' }} 
+                                />
+                                <Text>
+                                    {isFraudOracleActive ? 'Oracle monitoring active' : 'No fraud oracle configured'}
+                                </Text>
                                 {isUserFraudOracle && (
                                     <Tag color="blue" size="small">You are the fraud oracle</Tag>
                                 )}
                             </div>
-                            {fraudOracleAddress && (
+                            {isFraudOracleActive && fraudOracleAddress && (
                                 <Text type="secondary" style={{ fontSize: '12px' }}>
                                     Fraud oracle: <Text code>{fraudOracleAddress.slice(0, 6)}...{fraudOracleAddress.slice(-4)}</Text>
                                 </Text>
                             )}
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                                Automatic refund if fraud detected
-                            </Text>
+                            {!isFraudOracleActive && (
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    Contract owner has not configured a fraud oracle. Fraud protection disabled.
+                                </Text>
+                            )}
+                            {isFraudOracleActive && (
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    Automatic refund if fraud detected
+                                </Text>
+                            )}
                             {escrowData.fraudFlagged && (
                                 <Alert
                                     message="Fraud Detected"

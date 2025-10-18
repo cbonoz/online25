@@ -394,9 +394,31 @@ export const isFraudOracle = async (walletAddress) => {
         }
 
         const oracleAddress = await getFraudOracle();
+        
+        // Check if oracle is configured (not zero address)
+        const isConfigured = oracleAddress && oracleAddress !== '0x0000000000000000000000000000000000000000';
+        if (!isConfigured) {
+            return false;
+        }
+        
         return oracleAddress.toLowerCase() === walletAddress.toLowerCase();
     } catch (error) {
         console.error('Error checking if fraud oracle:', error);
+        return false;
+    }
+};
+
+// Check if fraud oracle is configured for the contract
+export const isFraudOracleConfigured = async () => {
+    try {
+        if (!isContractAvailable()) {
+            return false;
+        }
+
+        const oracleAddress = await getFraudOracle();
+        return oracleAddress && oracleAddress !== '0x0000000000000000000000000000000000000000';
+    } catch (error) {
+        console.error('Error checking fraud oracle configuration:', error);
         return false;
     }
 };

@@ -9,7 +9,10 @@
     "deploy": "yarn deploy:sepolia",
     "deploy:test": "npx hardhat ignition deploy ignition/modules/SafeSendContractTest.ts",
     "deploy:sepolia": "HARDHAT_NETWORK=sepolia npx hardhat ignition deploy --network sepolia ignition/modules/SafeSendContract.ts",
-    "deploy:mainnet": "HARDHAT_NETWORK=mainnet npx hardhat ignition deploy --network hardhatMainnet ignition/modules/SafeSendContract.ts"
+    "deploy:mainnet": "HARDHAT_NETWORK=mainnet npx hardhat ignition deploy --network hardhatMainnet ignition/modules/SafeSendContract.ts",
+    "deploy:oracle": "node scripts/deploy-with-oracle.js",
+    "deploy:oracle:sepolia": "node scripts/deploy-with-oracle.js --network sepolia",
+    "deploy:oracle:mainnet": "node scripts/deploy-with-oracle.js --network mainnet"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.3",
@@ -28,6 +31,7 @@
     "@nomicfoundation/hardhat-verify": "^3.0.3",
     "@nomicfoundation/hardhat-viem": "^3.0.0",
     "@nomicfoundation/hardhat-viem-assertions": "^3.0.2",
-    "@openzeppelin/contracts": "^5.4.0"
+    "@openzeppelin/contracts": "^5.4.0",
+    "commander": "^12.0.0"
   }
 }

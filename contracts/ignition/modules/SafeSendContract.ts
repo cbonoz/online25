@@ -13,7 +13,7 @@ export default buildModule("SafeSendContractModule", (m) => {
   const pyusdTokenAddress = m.getParameter("pyusdToken", defaultPyusdAddress);
   
   // Set fraud oracle address (defaults to zero address if not provided)
-  const fraudOracle = m.getParameter("fraudOracle", process.env.FRAUD_ORACLE_ADDRESS || "0x0000000000000000000000000000000000000000");
+  const fraudOracle = m.getParameter("fraudOracle", "0x0000000000000000000000000000000000000000");
   
   // Deploy SafeSend contract with the configured addresses
   const safeSendContract = m.contract("SafeSendContract", [pyusdTokenAddress, fraudOracle]);

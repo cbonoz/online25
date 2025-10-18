@@ -5,7 +5,7 @@ import { Button, Card, Form, Input, InputNumber, Typography, Space, Alert, Steps
 import { LockOutlined, UserOutlined, DollarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
-import { createEscrow, isContractAvailable } from '../util/safeSendContract';
+import { createEscrow, isContractAvailable, isFraudOracleConfigured } from '../util/safeSendContract';
 import { useWalletClient } from '../hooks/useWalletClient';
 import { useWalletAddress } from '../hooks/useWalletAddress';
 import { useNetworkSwitcher } from '../hooks/useNetworkSwitcher';
