@@ -1,8 +1,6 @@
 'use client';
 
 import { 
-    readContract, 
-    writeContract,
     formatUnits,
     parseUnits,
     createPublicClient,
@@ -71,7 +69,7 @@ export const createEscrow = async (walletClient, seller, amount, description) =>
         await approveToken(walletClient, amountInWei);
 
         // Then create the escrow
-        const hash = await writeContract(walletClient, {
+        const hash = await walletClient.writeContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'deposit',
@@ -109,7 +107,7 @@ export const approveToken = async (walletClient, amount) => {
             }
         ];
 
-        const hash = await writeContract(walletClient, {
+        const hash = await walletClient.writeContract({
             address: PYUSD_TOKEN_ADDRESS,
             abi: ERC20_ABI,
             functionName: 'approve',
@@ -134,7 +132,7 @@ export const releaseEscrow = async (walletClient, escrowId) => {
 
         const contractAddress = getContractAddress();
         
-        const hash = await writeContract(walletClient, {
+        const hash = await walletClient.writeContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'release',
@@ -158,7 +156,7 @@ export const refundEscrow = async (walletClient, escrowId) => {
 
         const contractAddress = getContractAddress();
         
-        const hash = await writeContract(walletClient, {
+        const hash = await walletClient.writeContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'refund',
@@ -182,7 +180,7 @@ export const getEscrow = async (escrowId) => {
 
         const contractAddress = getContractAddress();
         
-        const escrow = await readContract(publicClient, {
+        const escrow = await publicClient.readContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'getEscrow',
@@ -216,7 +214,7 @@ export const getBuyerEscrows = async (buyerAddress) => {
 
         const contractAddress = getContractAddress();
         
-        const escrowIds = await readContract(publicClient, {
+        const escrowIds = await publicClient.readContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'getBuyerEscrows',
@@ -245,7 +243,7 @@ export const getSellerEscrows = async (sellerAddress) => {
 
         const contractAddress = getContractAddress();
         
-        const escrowIds = await readContract(publicClient, {
+        const escrowIds = await publicClient.readContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'getSellerEscrows',
@@ -274,7 +272,7 @@ export const getEscrowCounter = async () => {
 
         const contractAddress = getContractAddress();
         
-        const counter = await readContract(publicClient, {
+        const counter = await publicClient.readContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'escrowCounter'
@@ -297,7 +295,7 @@ export const getPyusdTokenAddress = async () => {
 
         const contractAddress = getContractAddress();
         
-        const tokenAddress = await readContract(publicClient, {
+        const tokenAddress = await publicClient.readContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'pyusdToken'
@@ -319,7 +317,7 @@ export const getFraudOracle = async () => {
 
         const contractAddress = getContractAddress();
         
-        const oracleAddress = await readContract(publicClient, {
+        const oracleAddress = await publicClient.readContract({
             address: contractAddress,
             abi: SAFESEND_CONTRACT.abi,
             functionName: 'fraudOracle'

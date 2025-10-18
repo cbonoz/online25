@@ -54,3 +54,19 @@ export const IPFS_BASE_URL = 'https://ipfs.io/ipfs';
 
 // Dynamic and other integrations (add more as needed)
 export const DYNAMIC_AUTH_URL = 'https://dynamic.xyz'; // Example placeholder
+
+// Escrow creation steps configuration
+export const ESCROW_CREATION_STEPS = [
+    {
+        title: 'Escrow Details',
+        description: 'Set up the escrow parameters'
+    },
+    {
+        title: 'Deposit Funds',
+        description: 'Deposit PYUSD into escrow'
+    },
+    {
+        title: 'Confirmation',
+        description: 'Review and confirm transaction'
+    }
+];

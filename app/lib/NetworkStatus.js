@@ -1,6 +1,6 @@
 'use client';
 
-import { Alert, Button, Spin } from 'antd';
+import { Alert, Button, Spin, message } from 'antd';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useNetworkSwitcher } from '../hooks/useNetworkSwitcher';
 import { useState, useEffect } from 'react';
@@ -16,6 +16,7 @@ const NetworkStatus = ({ showSwitcher = true, style = {} }) => {
   
   // Add local state to prevent flashing
   const [isVisible, setIsVisible] = useState(false);
+  const [lastError, setLastError] = useState(null);
 
   // Only show component after initial check is complete
   useEffect(() => {
@@ -35,11 +36,14 @@ const NetworkStatus = ({ showSwitcher = true, style = {} }) => {
 
   const handleSwitchNetwork = async () => {
     try {
+      setLastError(null);
       await switchToRequiredNetwork();
+      message.success(`Successfully switched to ${requiredNetwork.name}`);
     } catch (error) {
       console.error('Network switch failed:', error);
-      // Show user-friendly error message
-      alert(`Unable to switch networks automatically. Please manually switch your wallet to ${requiredNetwork.name} (Chain ID: ${requiredNetwork.id})`);
+      const errorMsg = error.message || `Unable to switch networks automatically. Please manually switch your wallet to ${requiredNetwork.name} (Chain ID: ${requiredNetwork.id})`;
+      setLastError(errorMsg);
+      message.error(errorMsg);
     }
   };
 
@@ -60,8 +64,21 @@ const NetworkStatus = ({ showSwitcher = true, style = {} }) => {
     <div style={style}>
       <Alert 
         message={`Please switch to ${requiredNetwork.name} (Chain ID: ${requiredNetwork.id})`}
-        description={showSwitcher ? "Click the button below to switch networks, or manually switch in your wallet." : "Please manually switch your wallet network."}
-        type="warning" 
+        description={
+          lastError ? (
+            <div>
+              <div style={{ marginBottom: '8px' }}>
+                {showSwitcher ? "Automatic network switching failed. Please manually switch in your wallet." : "Please manually switch your wallet network."}
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                Error: {lastError}
+              </div>
+            </div>
+          ) : (
+            showSwitcher ? "Click the button below to switch networks, or manually switch in your wallet." : "Please manually switch your wallet network."
+          )
+        }
+        type={lastError ? "error" : "warning"}
         showIcon
         action={showSwitcher && (
           <Button 

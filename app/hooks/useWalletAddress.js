@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { useWalletClient } from './useWalletClient';
 
 export function useWalletAddress() {
+    const { primaryWallet, user } = useDynamicContext();
     const walletClient = useWalletClient();
     const [address, setAddress] = useState(null);
     const [prevAddress, setPrevAddress] = useState(null);
@@ -14,14 +16,36 @@ export function useWalletAddress() {
         const getAddress = () => {
             let newAddress = null;
             
-            if (walletClient) {
+            // Method 1: Get from Dynamic's primaryWallet
+            if (primaryWallet?.address) {
+                newAddress = primaryWallet.address;
+                console.log('Address from primaryWallet:', newAddress);
+            }
+            // Method 2: Get from Dynamic's user
+            else if (user?.walletAddress) {
+                newAddress = user.walletAddress;
+                console.log('Address from user:', newAddress);
+            }
+            // Method 3: Get from walletClient
+            else if (walletClient) {
                 try {
                     newAddress = walletClient.account?.address || walletClient.address;
+                    console.log('Address from walletClient:', newAddress);
                 } catch (error) {
-                    console.error('Error getting wallet address:', error);
+                    console.error('Error getting wallet address from client:', error);
                     newAddress = null;
                 }
             }
+            
+            // Debug logging
+            console.log('Wallet connection state:', {
+                primaryWallet: !!primaryWallet,
+                primaryWalletAddress: primaryWallet?.address,
+                user: !!user,
+                userWalletAddress: user?.walletAddress,
+                walletClient: !!walletClient,
+                finalAddress: newAddress
+            });
             
             // Only update if the address actually changed
             if (newAddress !== lastAddressRef.current) {
@@ -34,7 +58,7 @@ export function useWalletAddress() {
         };
 
         getAddress();
-    }, [walletClient]);
+    }, [primaryWallet, user, walletClient]);
 
     // Reset the change flag after it's been consumed
     const resetHasChanged = () => {
@@ -47,6 +71,9 @@ export function useWalletAddress() {
         prevAddress,
         hasChanged,
         resetHasChanged,
-        isConnected: !!address
+        isConnected: !!address,
+        // Additional Dynamic.xyz specific info for debugging
+        walletType: primaryWallet?.connector?.key,
+        walletName: primaryWallet?.connector?.name
     };
 }

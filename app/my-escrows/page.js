@@ -329,7 +329,13 @@ export default function MyEscrowsPage() {
                                             onClick={() => router.push('/escrow')}
                                         >
                                             Create New Escrow
-                                        </Button>
+                                        </Button>&nbsp; 
+                                            <Button 
+                                            type="secondary"
+                        onClick={() => router.push('/about')}
+                    >
+                        Learn More
+                    </Button>
                                     </div>
                                 )
                             }}
@@ -356,24 +362,6 @@ export default function MyEscrowsPage() {
                     </Card>
                 </TabPane>
             </Tabs>
-
-            <div style={{ textAlign: 'center', marginTop: '32px' }}>
-                <Space size="large">
-                    <Button 
-                        type="primary" 
-                        size="large"
-                        onClick={() => router.push('/escrow')}
-                    >
-                        Create New Escrow
-                    </Button>
-                    <Button 
-                        size="large"
-                        onClick={() => router.push('/about')}
-                    >
-                        Learn More
-                    </Button>
-                </Space>
-            </div>
         </div>
     );
 }

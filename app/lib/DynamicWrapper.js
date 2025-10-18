@@ -32,7 +32,7 @@ const DynamicWrapper = ({ children }) => {
     <DynamicContextProvider
       settings={{
         // Environment ID provided by user
-        environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENV_ID || "17f8076d-1654-4b59-8745-c38137f5a7d1",
+        environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENV_ID || "c4e54441-0fde-4888-a5e3-44c34def69af",
         walletConnectors: [EthereumWalletConnectors],
         appName: siteConfig.title,
         appLogoUrl: "/logo.png",
