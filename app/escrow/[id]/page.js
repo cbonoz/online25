@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Space, Button, Alert, Tag, Descriptions, Steps, Timeline } from 'antd';
+import { Card, Typography, Space, Button, Alert, Tag, Descriptions, Steps, Timeline, message } from 'antd';
 import { 
     DollarOutlined, 
     UserOutlined, 
@@ -12,6 +12,17 @@ import {
     EyeOutlined
 } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
+import { 
+    getEscrow, 
+    releaseEscrow, 
+    refundEscrow, 
+    isContractAvailable,
+    EscrowStatus,
+    getStatusText as getContractStatusText
+} from '../../util/safeSendContract';
+import { useWalletClient } from '../../hooks/useWalletClient';
+import { useWalletAddress } from '../../hooks/useWalletAddress';
+import DemoModeAlert from '../../lib/DemoModeAlert';
 
 const { Title, Paragraph, Text } = Typography;
 const { Step } = Steps;
@@ -21,71 +32,177 @@ export default function EscrowDetailsPage() {
     const params = useParams();
     const [loading, setLoading] = useState(false);
     const [escrowData, setEscrowData] = useState(null);
+    const walletClient = useWalletClient();
+    const { address: walletAddress } = useWalletAddress();
 
-    // Mock escrow data - in production this would come from blockchain
+    // Load escrow data from contract or mock data
     useEffect(() => {
-        // Simulate loading escrow data
-        setTimeout(() => {
-            setEscrowData({
-                id: params.id || 'escrow-1',
-                amount: '500.00',
-                buyer: '0x1234567890abcdef1234567890abcdef12345678',
-                seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
-                status: 'active',
-                description: 'Website development project - Full stack e-commerce platform',
-                createdAt: '2025-01-10T14:30:00Z',
-                lastUpdated: '2025-01-10T14:30:00Z',
-                txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-                oracleAddress: '0x9876543210fedcba9876543210fedcba98765432',
-                events: [
-                    {
-                        type: 'Deposited',
-                        timestamp: '2025-01-10T14:30:00Z',
-                        description: 'PYUSD deposited into escrow contract',
-                        txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
-                    }
-                ]
-            });
-        }, 1000);
+        const loadEscrowData = async () => {
+            if (!isContractAvailable()) {
+                // Use mock data in demo mode
+                setTimeout(() => {
+                    setEscrowData({
+                        id: params.id || 'escrow-1',
+                        amount: '500.00',
+                        buyer: '0x1234567890abcdef1234567890abcdef12345678',
+                        seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
+                        status: EscrowStatus.Active,
+                        statusText: 'Active',
+                        description: 'Website development project - Full stack e-commerce platform',
+                        createdAt: '2025-01-10T14:30:00Z',
+                        lastUpdated: '2025-01-10T14:30:00Z',
+                        txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+                        oracleAddress: '0x9876543210fedcba9876543210fedcba98765432',
+                        fraudFlagged: false,
+                        events: [
+                            {
+                                type: 'Deposited',
+                                timestamp: '2025-01-10T14:30:00Z',
+                                description: 'PYUSD deposited into escrow contract',
+                                txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+                            }
+                        ]
+                    });
+                }, 1000);
+                return;
+            }
+
+            // Try to load from contract
+            try {
+                const escrowId = parseInt(params.id);
+                if (isNaN(escrowId)) {
+                    throw new Error('Invalid escrow ID');
+                }
+                
+                const data = await getEscrow(escrowId);
+                setEscrowData(data);
+            } catch (error) {
+                console.error('Error loading escrow data:', error);
+                message.error('Failed to load escrow data');
+            }
+        };
+
+        loadEscrowData();
     }, [params.id]);
 
     const handleRelease = async () => {
+        if (!isContractAvailable()) {
+            message.info('Running in demo mode - would release funds in production');
+            return;
+        }
+
+        if (!walletClient) {
+            message.error('Please connect your wallet first');
+            return;
+        }
+
         setLoading(true);
         try {
-            // TODO: Implement release logic
-            console.log('Releasing funds...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            // Update status or refresh data
+            console.log('Releasing funds for escrow:', params.id);
+            const hash = await releaseEscrow(walletClient, parseInt(params.id));
+            message.success('Funds released successfully!');
+            console.log('Transaction hash:', hash);
+            
+            // Refresh escrow data
+            window.location.reload();
         } catch (error) {
             console.error('Release failed:', error);
+            message.error(error.message || 'Failed to release funds');
         } finally {
             setLoading(false);
         }
     };
 
     const handleRefund = async () => {
+        if (!isContractAvailable()) {
+            message.info('Running in demo mode - would process refund in production');
+            return;
+        }
+
+        if (!walletClient) {
+            message.error('Please connect your wallet first');
+            return;
+        }
+
         setLoading(true);
         try {
-            // TODO: Implement refund logic
-            console.log('Processing refund...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            // Update status or refresh data
+            console.log('Processing refund for escrow:', params.id);
+            const hash = await refundEscrow(walletClient, parseInt(params.id));
+            message.success('Refund processed successfully!');
+            console.log('Transaction hash:', hash);
+            
+            // Refresh escrow data
+            window.location.reload();
         } catch (error) {
             console.error('Refund failed:', error);
+            message.error(error.message || 'Failed to process refund');
         } finally {
             setLoading(false);
         }
     };
 
     const getStatusColor = (status) => {
-        switch (status) {
-            case 'active': return 'blue';
-            case 'pending_release': return 'orange';
-            case 'completed': return 'green';
-            case 'refunded': return 'red';
-            case 'fraud_flagged': return 'red';
-            default: return 'default';
+        // Handle both numeric (contract) and string (mock) status values
+        if (typeof status === 'number') {
+            switch (status) {
+                case EscrowStatus.Active: return 'blue';
+                case EscrowStatus.Released: return 'green';
+                case EscrowStatus.Refunded: return 'red';
+                case EscrowStatus.FraudFlagged: return 'red';
+                default: return 'default';
+            }
+        } else {
+            // Legacy string format
+            switch (status) {
+                case 'active': return 'blue';
+                case 'completed': return 'green';
+                case 'refunded': return 'red';
+                case 'fraud_flagged': return 'red';
+                default: return 'default';
+            }
         }
+    };
+
+    const getStatusText = (status, statusText) => {
+        if (statusText) return statusText;
+        
+        if (typeof status === 'number') {
+            return getContractStatusText(status);
+        } else {
+            // Legacy format
+            switch (status) {
+                case 'active': return 'Active';
+                case 'completed': return 'Completed';
+                case 'refunded': return 'Refunded';
+                case 'fraud_flagged': return 'Fraud Flagged';
+                default: return status;
+            }
+        }
+    };
+
+    const canRelease = () => {
+        if (!escrowData || !walletAddress) return false;
+        
+        // Only buyer can release funds and only if escrow is active
+        const isBuyer = walletAddress.toLowerCase() === escrowData.buyer.toLowerCase();
+        const isActive = (typeof escrowData.status === 'number') 
+            ? escrowData.status === EscrowStatus.Active 
+            : escrowData.status === 'active';
+            
+        return isBuyer && isActive && !escrowData.fraudFlagged;
+    };
+
+    const canRefund = () => {
+        if (!escrowData || !walletAddress) return false;
+        
+        // Both buyer and seller can request refund if escrow is active
+        const isBuyer = walletAddress.toLowerCase() === escrowData.buyer.toLowerCase();
+        const isSeller = walletAddress.toLowerCase() === escrowData.seller.toLowerCase();
+        const isActive = (typeof escrowData.status === 'number') 
+            ? escrowData.status === EscrowStatus.Active 
+            : escrowData.status === 'active';
+            
+        return (isBuyer || isSeller) && isActive;
     };
 
     if (!escrowData) {
@@ -110,12 +227,8 @@ export default function EscrowDetailsPage() {
                 <Text code style={{ fontSize: '16px' }}>{escrowData.id}</Text>
             </div>
 
-            <Alert
-                message="Demo Mode"
+            <DemoModeAlert 
                 description="This shows sample escrow details. In production, this would display real-time blockchain data."
-                type="info"
-                showIcon
-                style={{ marginBottom: '24px' }}
             />
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
@@ -125,7 +238,7 @@ export default function EscrowDetailsPage() {
                         <Descriptions column={1} size="large">
                             <Descriptions.Item label="Status">
                                 <Tag color={getStatusColor(escrowData.status)} style={{ fontSize: '14px', padding: '4px 12px' }}>
-                                    {escrowData.status.replace('_', ' ').toUpperCase()}
+                                    {getStatusText(escrowData.status, escrowData.statusText)}
                                 </Tag>
                             </Descriptions.Item>
                             <Descriptions.Item label="Amount">
@@ -193,38 +306,38 @@ export default function EscrowDetailsPage() {
                 <div>
                     <Card title="Actions" style={{ marginBottom: '24px' }}>
                         <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                            {escrowData.status === 'active' && (
-                                <>
-                                    <Button 
-                                        type="primary" 
-                                        size="large" 
-                                        block
-                                        onClick={handleRelease}
-                                        loading={loading}
-                                        icon={<CheckCircleOutlined />}
-                                    >
-                                        Release Funds
-                                    </Button>
-                                    <Button 
-                                        danger 
-                                        size="large" 
-                                        block
-                                        onClick={handleRefund}
-                                        loading={loading}
-                                        icon={<WarningOutlined />}
-                                    >
-                                        Request Refund
-                                    </Button>
-                                </>
+                            {canRelease() && (
+                                <Button 
+                                    type="primary" 
+                                    size="large" 
+                                    block
+                                    onClick={handleRelease}
+                                    loading={loading}
+                                    icon={<CheckCircleOutlined />}
+                                >
+                                    Release Funds
+                                </Button>
+                            )}
+                            {canRefund() && (
+                                <Button 
+                                    danger 
+                                    size="large" 
+                                    block
+                                    onClick={handleRefund}
+                                    loading={loading}
+                                    icon={<WarningOutlined />}
+                                >
+                                    Request Refund
+                                </Button>
                             )}
                             <Button 
                                 size="large" 
                                 block
-                                href={`https://sepolia.etherscan.io/address/${escrowData.txHash}`}
+                                href={`https://sepolia.etherscan.io/address/${escrowData.txHash || escrowData.id}`}
                                 target="_blank"
                                 icon={<EyeOutlined />}
                             >
-                                View Contract
+                                View on Explorer
                             </Button>
                         </Space>
                     </Card>

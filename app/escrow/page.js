@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button, Card, Form, Input, InputNumber, Typography, Space, Alert, Steps } from 'antd';
+import { Button, Card, Form, Input, InputNumber, Typography, Space, Alert, Steps, message } from 'antd';
 import { LockOutlined, UserOutlined, DollarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { createEscrow, isContractAvailable } from '../util/safeSendContract';
+import { useWalletClient } from '../hooks/useWalletClient';
+import DemoModeAlert from '../lib/DemoModeAlert';
 
 const { Title, Paragraph, Text } = Typography;
 const { Step } = Steps;
@@ -13,20 +16,43 @@ export default function DepositPage() {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
+    const walletClient = useWalletClient();
 
     const handleDeposit = async (values) => {
+        if (!isContractAvailable()) {
+            message.info('Running in demo mode - would create escrow in production');
+            // Simulate transaction for demo
+            setLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            setLoading(false);
+            router.push(`/escrow/demo-${Date.now()}`);
+            return;
+        }
+
+        if (!walletClient) {
+            message.error('Please connect your wallet first');
+            return;
+        }
+
         setLoading(true);
         try {
-            // TODO: Implement PYUSD escrow deposit logic
-            console.log('Deposit values:', values);
+            console.log('Creating escrow with values:', values);
             
-            // Simulate transaction
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const hash = await createEscrow(
+                walletClient,
+                values.seller,
+                values.amount,
+                values.description
+            );
             
-            // Redirect to escrow details page
-            router.push(`/escrow/example-id`);
+            message.success('Escrow created successfully!');
+            console.log('Transaction hash:', hash);
+            
+            // Navigate to a transaction status page or back to my-escrows
+            router.push('/my-escrows');
         } catch (error) {
             console.error('Deposit failed:', error);
+            message.error(error.message || 'Failed to create escrow');
         } finally {
             setLoading(false);
         }
@@ -62,12 +88,8 @@ export default function DepositPage() {
                 ))}
             </Steps>
 
-            <Alert
-                message="Demo Mode"
+            <DemoModeAlert 
                 description="This is a demonstration interface. In production, this would connect to deployed SafeSend smart contracts on Ethereum."
-                type="info"
-                showIcon
-                style={{ marginBottom: '32px' }}
             />
 
             <Card>

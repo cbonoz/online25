@@ -12,6 +12,15 @@ import {
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { APP_NAME } from '../constants';
+import { 
+    isContractAvailable, 
+    getBuyerEscrows, 
+    getSellerEscrows,
+    EscrowStatus,
+    getStatusText as getContractStatusText
+} from '../util/safeSendContract';
+import { useWalletAddress } from '../hooks/useWalletAddress';
+import DemoModeAlert from '../lib/DemoModeAlert';
 
 const { Title, Paragraph, Text } = Typography;
 const { TabPane } = Tabs;
@@ -19,6 +28,80 @@ const { TabPane } = Tabs;
 export default function MyEscrowsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [escrows, setEscrows] = useState([]);
+    const [buyerEscrows, setBuyerEscrows] = useState([]);
+    const [sellerEscrows, setSellerEscrows] = useState([]);
+    const { address: walletAddress } = useWalletAddress();
+
+    // Load escrows from contract if available
+    useEffect(() => {
+        const loadEscrows = async () => {
+            if (!isContractAvailable() || !walletAddress) {
+                // Use mock data when contract is not available
+                const mockEscrows = [
+                    {
+                        id: 1,
+                        amount: '500.00',
+                        seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
+                        buyer: walletAddress || '0x1234567890abcdef1234567890abcdef12345678',
+                        status: EscrowStatus.Active,
+                        statusText: 'Active',
+                        description: 'Website development project',
+                        createdAt: '2025-01-10',
+                        fraudFlagged: false
+                    },
+                    {
+                        id: 2,
+                        amount: '250.00',
+                        buyer: '0x1234567890abcdef1234567890abcdef12345678',
+                        seller: walletAddress || '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
+                        status: EscrowStatus.Active,
+                        statusText: 'Active',
+                        description: 'Logo design services',
+                        createdAt: '2025-01-08',
+                        fraudFlagged: false
+                    },
+                    {
+                        id: 3,
+                        amount: '1000.00',
+                        seller: '0xabcdef1234567890abcdef1234567890abcdef12',
+                        buyer: walletAddress || '0x1234567890abcdef1234567890abcdef12345678',
+                        status: EscrowStatus.Released,
+                        statusText: 'Released',
+                        description: 'Mobile app development',
+                        createdAt: '2025-01-05',
+                        fraudFlagged: false
+                    }
+                ];
+                setEscrows(mockEscrows);
+                setBuyerEscrows(mockEscrows.filter(e => e.buyer.toLowerCase() === (walletAddress || '0x1234567890abcdef1234567890abcdef12345678').toLowerCase()));
+                setSellerEscrows(mockEscrows.filter(e => e.seller.toLowerCase() === (walletAddress || '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123').toLowerCase()));
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const [buyerData, sellerData] = await Promise.all([
+                    getBuyerEscrows(walletAddress),
+                    getSellerEscrows(walletAddress)
+                ]);
+                
+                setBuyerEscrows(buyerData);
+                setSellerEscrows(sellerData);
+                setEscrows([...buyerData, ...sellerData]);
+            } catch (error) {
+                console.error('Error loading escrows:', error);
+                // Fallback to empty arrays on error
+                setBuyerEscrows([]);
+                setSellerEscrows([]);
+                setEscrows([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadEscrows();
+    }, [walletAddress]);
 
     // Mock escrow data - in production this would come from blockchain
     const mockEscrows = [
@@ -52,22 +135,43 @@ export default function MyEscrowsPage() {
     ];
 
     const getStatusColor = (status) => {
-        switch (status) {
-            case 'active': return 'blue';
-            case 'pending_release': return 'orange';
-            case 'completed': return 'green';
-            case 'refunded': return 'red';
-            default: return 'default';
+        // Handle both old mock format and new contract format
+        if (typeof status === 'number') {
+            // Contract enum values
+            switch (status) {
+                case EscrowStatus.Active: return 'blue';
+                case EscrowStatus.Released: return 'green';
+                case EscrowStatus.Refunded: return 'red';
+                case EscrowStatus.FraudFlagged: return 'red';
+                default: return 'default';
+            }
+        } else {
+            // Legacy mock format
+            switch (status) {
+                case 'active': return 'blue';
+                case 'pending_release': return 'orange';
+                case 'completed': return 'green';
+                case 'refunded': return 'red';
+                default: return 'default';
+            }
         }
     };
 
-    const getStatusText = (status) => {
-        switch (status) {
-            case 'active': return 'Active Escrow';
-            case 'pending_release': return 'Pending Release';
-            case 'completed': return 'Completed';
-            case 'refunded': return 'Refunded';
-            default: return status;
+    const getStatusText = (status, statusText) => {
+        // Use statusText if provided (from contract), otherwise map legacy status
+        if (statusText) return statusText;
+        
+        if (typeof status === 'number') {
+            return getContractStatusText(status);
+        } else {
+            // Legacy mock format
+            switch (status) {
+                case 'active': return 'Active Escrow';
+                case 'pending_release': return 'Pending Release';
+                case 'completed': return 'Completed';
+                case 'refunded': return 'Refunded';
+                default: return status;
+            }
         }
     };
 
@@ -92,29 +196,64 @@ export default function MyEscrowsPage() {
         {
             title: 'Counterparty',
             key: 'counterparty',
-            render: (record) => (
-                <Text code>
-                    {record.role === 'buyer' ? record.seller : record.buyer}
-                </Text>
-            )
+            render: (record) => {
+                // Determine counterparty based on wallet address
+                let counterparty = '';
+                let role = '';
+                
+                if (walletAddress && record.buyer && record.seller) {
+                    if (record.buyer.toLowerCase() === walletAddress.toLowerCase()) {
+                        counterparty = record.seller;
+                        role = 'buyer';
+                    } else if (record.seller.toLowerCase() === walletAddress.toLowerCase()) {
+                        counterparty = record.buyer;
+                        role = 'seller';
+                    } else {
+                        // Fallback to record.role if available (for mock data)
+                        counterparty = record.role === 'buyer' ? record.seller : record.buyer;
+                        role = record.role;
+                    }
+                } else {
+                    // Fallback for mock data format
+                    counterparty = record.role === 'buyer' ? record.seller : record.buyer;
+                    role = record.role || 'buyer';
+                }
+                
+                return <Text code>{counterparty}</Text>;
+            }
         },
         {
             title: 'Role',
-            dataIndex: 'role',
             key: 'role',
-            render: (role) => (
-                <Tag color={role === 'buyer' ? 'blue' : 'green'}>
-                    {role.toUpperCase()}
-                </Tag>
-            )
+            render: (record) => {
+                let role = '';
+                
+                if (walletAddress && record.buyer && record.seller) {
+                    if (record.buyer.toLowerCase() === walletAddress.toLowerCase()) {
+                        role = 'buyer';
+                    } else if (record.seller.toLowerCase() === walletAddress.toLowerCase()) {
+                        role = 'seller';
+                    } else {
+                        role = record.role || 'buyer';
+                    }
+                } else {
+                    role = record.role || 'buyer';
+                }
+                
+                return (
+                    <Tag color={role === 'buyer' ? 'blue' : 'green'}>
+                        {role.toUpperCase()}
+                    </Tag>
+                );
+            }
         },
         {
             title: 'Status',
             dataIndex: 'status',
             key: 'status',
-            render: (status) => (
+            render: (status, record) => (
                 <Tag color={getStatusColor(status)}>
-                    {getStatusText(status)}
+                    {getStatusText(status, record.statusText)}
                 </Tag>
             )
         },
@@ -139,8 +278,14 @@ export default function MyEscrowsPage() {
         }
     ];
 
-    const activeEscrows = mockEscrows.filter(e => e.status === 'active' || e.status === 'pending_release');
-    const completedEscrows = mockEscrows.filter(e => e.status === 'completed' || e.status === 'refunded');
+    // Use the loaded escrows or filter mock data appropriately
+    const activeEscrows = isContractAvailable() 
+        ? escrows.filter(e => e.status === EscrowStatus.Active)
+        : mockEscrows.filter(e => e.status === 'active' || e.status === 'pending_release');
+        
+    const completedEscrows = isContractAvailable()
+        ? escrows.filter(e => e.status === EscrowStatus.Released || e.status === EscrowStatus.Refunded)
+        : mockEscrows.filter(e => e.status === 'completed' || e.status === 'refunded');
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
@@ -151,15 +296,11 @@ export default function MyEscrowsPage() {
                 </Paragraph>
             </div>
 
-            <Alert
-                message="Demo Mode"
-                description="This shows sample escrow data. In production, this would display your actual on-chain escrow transactions."
-                type="info"
-                showIcon
-                style={{ marginBottom: '24px' }}
-            />
+            <DemoModeAlert />
 
-            <Tabs defaultActiveKey="active" size="large">
+            <Tabs defaultActiveKey="active" size="large"
+                loading={loading}
+            >
                 <TabPane 
                     tab={
                         <Space>
