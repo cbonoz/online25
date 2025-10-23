@@ -28,11 +28,13 @@ export function useBlockscout() {
 
     /**
      * Show transaction history popup for a specific address
+     * This will show all transactions TO and FROM the specified address
      * @param {string} address - Address to show transactions for
      * @param {string} customChainId - Optional custom chain ID (defaults to current chain)
      */
     const showAddressTransactions = (address, customChainId = chainId) => {
         try {
+            console.log(`Opening Blockscout popup for address: ${address}`);
             openPopup({
                 chainId: customChainId,
                 address: address
@@ -44,10 +46,12 @@ export function useBlockscout() {
 
     /**
      * Show transaction history popup for the entire chain
+     * This will show ALL recent transactions on the chain (not filtered)
      * @param {string} customChainId - Optional custom chain ID (defaults to current chain)
      */
     const showChainTransactions = (customChainId = chainId) => {
         try {
+            console.log(`Opening Blockscout popup for chain: ${customChainId}`);
             openPopup({
                 chainId: customChainId
             });
@@ -57,18 +61,22 @@ export function useBlockscout() {
     };
 
     /**
-     * Show transactions for the escrow contract
-     * @param {string} contractAddress - Contract address
+     * Show transactions for the SafeSend escrow contract
+     * This displays all transactions involving the contract (deposits, releases, refunds, etc.)
+     * @param {string} contractAddress - SafeSend contract address
      */
     const showContractTransactions = (contractAddress) => {
+        console.log(`Showing SafeSend contract transactions for: ${contractAddress}`);
         showAddressTransactions(contractAddress);
     };
 
     /**
      * Show transactions for PYUSD token contract
+     * This displays all PYUSD token transfers on the chain
      * @param {string} tokenAddress - PYUSD token address
      */
     const showTokenTransactions = (tokenAddress) => {
+        console.log(`Showing PYUSD token transactions for: ${tokenAddress}`);
         showAddressTransactions(tokenAddress);
     };
 

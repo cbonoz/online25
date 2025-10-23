@@ -18,7 +18,7 @@ const { Text } = Typography;
 export default function Navigation() {
     const router = useRouter();
     const pathname = usePathname();
-    const { showChainTransactions } = useBlockscout();
+    const { showChainTransactions, showContractTransactions } = useBlockscout();
     const { address: walletAddress } = useWalletAddress();
 
     // Hide escrow creation tabs on /escrow pages
@@ -114,9 +114,18 @@ export default function Navigation() {
                         </div>
                     ))}
                     
-                    {/* Blockscout Chain Transactions Button */}
+                    {/* Blockscout Transactions Button - Shows contract txs if available, otherwise chain txs */}
                     <div
-                        onClick={() => showChainTransactions()}
+                        onClick={() => {
+                            // Prefer showing contract transactions if contract is deployed
+                            const contractAddress = typeof window !== 'undefined' && 
+                                                  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+                            if (contractAddress) {
+                                showContractTransactions(contractAddress);
+                            } else {
+                                showChainTransactions();
+                            }
+                        }}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -137,6 +146,7 @@ export default function Navigation() {
                             e.target.closest('div').style.opacity = '0.85';
                             e.target.closest('div').style.color = '#4b5563';
                         }}
+                        title={process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ? 'View SafeSend Contract Transactions' : 'View Chain Transactions'}
                     >
                         <HistoryOutlined />
                         <span style={{ marginLeft: 8 }}>Transactions</span>
