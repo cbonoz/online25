@@ -6,7 +6,6 @@ import { Button, Spin, Row, Col, Space } from 'antd';
 import { APP_DESC, APP_NAME, siteConfig } from './constants';
 import { CheckCircleTwoTone, LockTwoTone, SafetyCertificateTwoTone, EyeTwoTone } from '@ant-design/icons';
 import Logo from './lib/Logo';
-import BlockscoutDemo from './lib/BlockscoutDemo';
 import { useRouter } from 'next/navigation';
 import { colors } from './theme/colors';
 

@@ -598,41 +598,7 @@ export default function EscrowDetailsPage() {
                             >
                                 View on Explorer
                             </Button>
-                            
-                            {/* Blockscout Integration Buttons */}
-                            {isContractAvailable() && siteConfig.contractAddress && (
-                                <Button 
-                                    size="large" 
-                                    block
-                                    onClick={() => showContractTransactions(siteConfig.contractAddress)}
-                                    icon={<HistoryOutlined />}
-                                    type="dashed"
-                                >
-                                    Contract Transactions
-                                </Button>
-                            )}
-                            
-                            <Button 
-                                size="large" 
-                                block
-                                onClick={() => showTokenTransactions(PYUSD_TOKEN_ADDRESS)}
-                                icon={<LinkOutlined />}
-                                type="dashed"
-                            >
-                                PYUSD Transactions
-                            </Button>
-                            
-                            {walletAddress && (
-                                <Button 
-                                    size="large" 
-                                    block
-                                    onClick={() => showAddressTransactions(walletAddress)}
-                                    icon={<UserOutlined />}
-                                    type="dashed"
-                                >
-                                    My Transactions
-                                </Button>
-                            )}
+                           
                         </Space>
                     </Card>
 

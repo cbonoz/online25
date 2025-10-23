@@ -356,7 +356,7 @@ export default function MyEscrowsPage() {
 
             {/* Blockscout Transaction Monitoring */}
             <Card 
-                title="Transaction Monitoring" 
+                title="View history"
                 size="small" 
                 style={{ marginBottom: '16px' }}
                 actions={[
@@ -381,16 +381,16 @@ export default function MyEscrowsPage() {
                         key="wallet" 
                         type="link" 
                         icon={<EyeOutlined />}
-                        onClick={() => walletAddress && showAddressTransactions(walletAddress)}
+                        onClick={() => walletAddress && showAddressTransactions(walletAddress, undefined, 'My Wallet')}
                         disabled={!walletAddress}
                     >
                         My Wallet Activity
                     </Button>
                 ]}
             >
-                <Text type="secondary">
+                {/* <Text type="secondary">
                     Monitor real-time transaction activity powered by Blockscout explorer integration
-                </Text>
+                </Text> */}
             </Card>
 
             {!isFraudOracleActive && isContractAvailable() && (

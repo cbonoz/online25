@@ -21,11 +21,10 @@ export function useWalletClient() {
         if (primaryWallet?.connector?.getWalletProvider) {
             primaryWallet.connector.getWalletProvider()
                 .then(provider => {
-                    console.log('Got async provider for:', connectorKey);
                     setAsyncProvider(provider);
                 })
                 .catch(error => {
-                    console.warn('Failed to get async provider:', error);
+                    console.error('Failed to get async provider:', error);
                     setAsyncProvider(null);
                 });
         } else {
@@ -34,28 +33,13 @@ export function useWalletClient() {
     }, [primaryWallet?.connector, connectorKey]);
 
     const walletClient = useMemo(() => {
-        console.log('Creating wallet client:', {
-            hasWallet,
-            hasConnector,
-            walletAddress,
-            connectorKey,
-            hasAsyncProvider: !!asyncProvider
-        });
-
-        if (!hasWallet) {
-            console.log('No wallet available');
-            return null;
-        }
-        
-        if (!hasConnector) {
-            console.log('No connector available');
+        if (!hasWallet || !hasConnector) {
             return null;
         }
         
         // Prevent repeated failed attempts for the same configuration
         const currentAttemptKey = `${connectorKey}-${walletAddress}`;
         if (lastFailedAttemptRef.current === currentAttemptKey) {
-            console.log('Skipping repeated failed attempt for:', currentAttemptKey);
             return null;
         }
         
@@ -71,27 +55,16 @@ export function useWalletClient() {
             
             // For Coinbase wallet, sometimes we need to get it from window.ethereum
             if (!provider && (connectorKey === 'coinbasewallet' || connectorKey === 'coinbase')) {
-                console.log('Trying Coinbase wallet fallback detection...');
                 if (typeof window !== 'undefined' && window.ethereum) {
-                    console.log('Window ethereum available:', {
-                        isCoinbaseWallet: !!window.ethereum.isCoinbaseWallet,
-                        hasSelectedProvider: !!window.ethereum.selectedProvider,
-                        selectedProviderIsCoinbase: !!window.ethereum.selectedProvider?.isCoinbaseWallet
-                    });
                     // Check if this is Coinbase wallet
                     if (window.ethereum.isCoinbaseWallet || window.ethereum.selectedProvider?.isCoinbaseWallet) {
                         provider = window.ethereum.isCoinbaseWallet ? window.ethereum : window.ethereum.selectedProvider;
-                        console.log('Found Coinbase provider via window.ethereum');
                     }
-                } else {
-                    console.log('Window.ethereum not available for Coinbase fallback');
                 }
             }
             
             // Additional Coinbase wallet detection methods
             if (!provider && (connectorKey === 'coinbasewallet' || connectorKey === 'coinbase')) {
-                console.log('Trying additional Coinbase detection methods...');
-                // Try getting provider from connector methods
                 const connector = primaryWallet.connector;
                 if (connector) {
                     const potentialProviders = [
@@ -103,10 +76,8 @@ export function useWalletClient() {
                         connector.sdk?.provider
                     ];
                     
-                    for (let i = 0; i < potentialProviders.length; i++) {
-                        const potentialProvider = potentialProviders[i];
+                    for (const potentialProvider of potentialProviders) {
                         if (potentialProvider) {
-                            console.log(`Found potential provider at index ${i}:`, typeof potentialProvider);
                             provider = potentialProvider;
                             break;
                         }
@@ -115,26 +86,15 @@ export function useWalletClient() {
                 
                 // Try window.coinbaseWalletExtension
                 if (!provider && typeof window !== 'undefined' && window.coinbaseWalletExtension) {
-                    console.log('Found Coinbase wallet extension');
                     provider = window.coinbaseWalletExtension;
                 }
             }
             
             if (!provider) {
-                console.log('No provider available for wallet:', connectorKey, {
-                    connector: !!primaryWallet.connector,
-                    hasProvider: !!primaryWallet.connector.provider,
-                    hasGetProvider: !!primaryWallet.connector.getProvider,
-                    hasEthereum: !!primaryWallet.connector.ethereum,
-                    hasPrivateProvider: !!primaryWallet.connector._provider,
-                    hasAsyncProvider: !!asyncProvider
-                });
                 // Mark this attempt as failed to prevent repeated tries
                 lastFailedAttemptRef.current = currentAttemptKey;
                 return null;
             }
-            
-            console.log('Found provider for wallet:', connectorKey, typeof provider);
         } catch (error) {
             console.error('Error getting provider:', error);
             lastFailedAttemptRef.current = currentAttemptKey;
@@ -143,7 +103,6 @@ export function useWalletClient() {
 
         // Ensure we have a valid provider before creating wallet client
         if (!provider) {
-            console.warn('No provider available for wallet client creation');
             lastFailedAttemptRef.current = currentAttemptKey;
             return null;
         }
@@ -155,7 +114,6 @@ export function useWalletClient() {
                 transport: custom(provider),
             });
             
-            console.log('Wallet client created successfully for:', connectorKey);
             // Reset failed attempts on success
             lastFailedAttemptRef.current = null;
             return client;

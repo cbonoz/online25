@@ -11,36 +11,6 @@ const { Title, Paragraph, Text } = Typography;
 export default function About() {
     const router = useRouter();
 
-    const features = [
-        {
-            icon: <SafetyCertificateTwoTone twoToneColor="#00aef2" style={{ fontSize: '24px' }} />,
-            title: 'Decentralized & Trustless',
-            description: 'All form submissions, offers, and payments are recorded on-chain using smart contracts. No centralized escrow or third-party platforms.'
-        },
-        {
-            icon: <DollarOutlined style={{ fontSize: '24px', color: '#52c41a' }} />,
-            title: 'Stablecoin Payments (PYUSD)',
-            description: 'Accept stablecoin payments for deposits, milestones, or offers—no volatility, no banking fees.'
-        },
-        {
-            icon: <CheckCircleTwoTone twoToneColor="#00aef2" style={{ fontSize: '24px' }} />,
-            title: 'Smart Contract Automation',
-            description: 'Hardhat-powered smart contracts handle form validation, offer generation, and automated payment releases.'
-        },
-        {
-            icon: <RocketOutlined style={{ fontSize: '24px', color: '#00aef2' }} />,
-            title: 'One-Click Form + Payment',
-            description: 'Collect structured client info and payment in a single, seamless flow. No accounts or complex onboarding required.'
-        }
-    ];    
-
-    const useCases = [
-        'Freelancers and service providers collecting offers or deposits',
-        'Anyone looking to simplify client onboarding and payment',
-        'Agencies or consultants issuing milestone-based contracts',
-        'Teams wanting full audibility of actions with on-chain payout logic'
-    ];
-
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
             {/* Header Section */}
@@ -68,43 +38,7 @@ export default function About() {
                 </Button>
             </div>
 
-            {/* Features Section */}
-            <div style={{ marginBottom: '60px' }}>
-                <Title level={2} style={{ textAlign: 'center', marginBottom: '40px' }}>
-                    Key Features
-                </Title>
-                <Row gutter={[32, 32]}>
-                    {features.map((feature, index) => (
-                        <Col key={index} xs={24} md={12}>
-                            <Card style={{ height: '100%', border: '1px solid #f0f0f0' }}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                                    <div style={{ 
-                                        width: '48px', 
-                                        height: '48px', 
-                                        background: '#f8f9fa', 
-                                        borderRadius: '8px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexShrink: 0
-                                    }}>
-                                        {feature.icon}
-                                    </div>
-                                    <div>
-                                        <Title level={4} style={{ marginBottom: '8px' }}>
-                                            {feature.title}
-                                        </Title>
-                                        <Paragraph style={{ marginBottom: 0, color: '#666' }}>
-                                            {feature.description}
-                                        </Paragraph>
-                                    </div>
-                                </div>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            </div>
-
+           
             {/* How It Works Section */}
             <div style={{ marginBottom: '60px' }}>
                 <Title level={2} style={{ textAlign: 'center', marginBottom: '40px' }}>
@@ -133,7 +67,7 @@ export default function About() {
                 </Title>
                 <Card>
                     <Row gutter={[16, 16]}>
-                        {useCases.map((useCase, index) => (
+                        {siteConfig.useCases.map((useCase, index) => (
                             <Col key={index} xs={24} sm={12}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <CheckCircleTwoTone twoToneColor="#52c41a" style={{ fontSize: '16px' }} />

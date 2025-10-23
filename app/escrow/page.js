@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Form, Input, InputNumber, Typography, Space, Alert, Steps, message } from 'antd';
-import { LockOutlined, UserOutlined, DollarOutlined } from '@ant-design/icons';
+import { LockOutlined, UserOutlined, DollarOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { createEscrow, isContractAvailable, isFraudOracleConfigured } from '../util/safeSendContract';
@@ -10,7 +10,7 @@ import { useWalletClient } from '../hooks/useWalletClient';
 import { useWalletAddress } from '../hooks/useWalletAddress';
 import { useNetworkSwitcher } from '../hooks/useNetworkSwitcher';
 import { useBlockscout } from '../hooks/useBlockscout';
-import { ESCROW_CREATION_STEPS } from '../constants';
+import { ESCROW_CREATION_STEPS, DEMO_DATA } from '../constants';
 import DemoModeAlert from '../lib/DemoModeAlert';
 import ConnectButton from '../lib/ConnectButton';
 
@@ -268,6 +268,15 @@ export default function DepositPage() {
         }
     };
 
+    const handlePrefillDemo = () => {
+        form.setFieldsValue({
+            sellerAddress: DEMO_DATA.sellerAddress,
+            amount: DEMO_DATA.amount,
+            description: DEMO_DATA.description
+        });
+        message.success('Demo data loaded! You can now create a test escrow.');
+    };
+
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 24px' }}>
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
@@ -308,6 +317,19 @@ export default function DepositPage() {
             )}
 
             <Card>
+                {/* Demo Data Prefill Button */}
+                <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+                    <Button 
+                        icon={<ThunderboltOutlined />}
+                        onClick={handlePrefillDemo}
+                        type="link"
+                        size="small"
+                        style={{ color: '#8c8c8c' }}
+                    >
+                        Load demo data
+                    </Button>
+                </div>
+                
                 <Form
                     form={form}
                     layout="vertical"

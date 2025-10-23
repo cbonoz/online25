@@ -48,6 +48,7 @@ const NetworkStatus = ({ showSwitcher = true, style = {} }) => {
   };
 
   if (isCorrectNetwork) {
+    return null
     return (
       <div style={style}>
         <Alert 

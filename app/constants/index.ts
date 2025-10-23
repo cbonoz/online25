@@ -15,7 +15,20 @@ export const siteConfig = {
         height: 37,
         alt: 'SafeSend Logo'
     },
-    contractAddress: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || undefined
+    contractAddress: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || undefined,
+    useCases: [
+        'Freelancers and service providers collecting offers or deposits',
+        'Anyone looking to simplify client onboarding and payment',
+        'Agencies or consultants issuing milestone-based contracts',
+        'Teams wanting full audibility of actions with on-chain payout logic'
+    ]
+};
+
+// Demo data for testing
+export const DEMO_DATA = {
+    sellerAddress: '0x81e9aA254Ff408458A7267Df3469198f5045A561',
+    amount: 0.1, // PYUSD
+    description: 'Demo escrow transaction for testing SafeSend fraud prevention features'
 };
 
 // Legacy exports for backward compatibility

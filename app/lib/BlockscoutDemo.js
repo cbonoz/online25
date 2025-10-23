@@ -170,7 +170,7 @@ export default function BlockscoutDemo() {
                                     block 
                                     size="large"
                                     icon={<CheckCircleOutlined />}
-                                    onClick={() => showAddressTransactions(walletAddress)}
+                                    onClick={() => showAddressTransactions(walletAddress, undefined, 'My Wallet')}
                                     style={{ height: '48px' }}
                                     type="primary"
                                 >
