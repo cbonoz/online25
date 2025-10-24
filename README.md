@@ -12,6 +12,12 @@ Traditional payment systems on Web2 offer robust buyer protection and fraud dete
 
 **SafeSend** is a decentralized escrow platform built on Ethereum that combines the security of traditional payment processors with the low-cost transparency of blockchain technology. By using PYUSD (PayPal's regulated stablecoin) and a modular fraud oracle architecture, SafeSend enables:
 
+Prototype built for the EthOnline 2025 hackathon.
+
+Demo url: https://usesafesend.vercel.app/ (deployed on testnet)
+
+<!-- Demo video:  -->
+
 **🛡️ Enterprise-Grade Fraud Protection at Blockchain Costs**
 - Real-time fraud detection during every transaction
 - Automatic buyer refunds when fraud is detected
@@ -129,19 +135,6 @@ KEY ARCHITECTURAL PRINCIPLES
    → Can be swapped without redeploying main payment contract
    → Maintained independently by fraud detection specialists
 
-⚡ AUTOMATIC FRAUD PREVENTION
-   → Oracle consulted during every escrow creation
-   → Flagged transactions auto-refund + revert immediately
-   → Graceful degradation if oracle unavailable
-
-🔍 TRANSPARENT & AUDITABLE
-   → All decisions logged as on-chain events
-   → Public oracle address verification
-   → Complete history on Blockscout/Etherscan
-
-💵 PYUSD STABLECOIN INTEGRATION
-   → Regulated stablecoin for real-world value
-   → Standard ERC-20 approve/transfer flow
 ```
 
 ---
