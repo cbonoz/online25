@@ -46,6 +46,8 @@ SafeSend uses a **modular oracle pattern** where the payment escrow contract (Sa
 
 The oracle evaluates transactions against blacklists, amount limits, behavioral patterns, and manual flags—returning a simple pass/fail decision. Flagged transactions are automatically refunded, protecting buyers without manual dispute resolution.
 
+Example contract transactions: https://eth-sepolia.blockscout.com/address/0x5E7eB35071A9D6b76fF9B37A0a406B5B67e03595?tab=txs
+
 ## System Architecture & User Flow
 
 ```
@@ -312,6 +314,52 @@ yarn dev
 ```
 
 Visit `http://localhost:3000` to see the application.
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="img/home_page.png" alt="SafeSend Home Page" width="800"/>
+  <br/>
+  <strong>Home Page</strong>
+  <br/><br/>
+</p>
+
+<p align="center">
+  <img src="img/safesend_contract.png" alt="SafeSend Contract Interface" width="800"/>
+  <br/>
+  <strong>SafeSend Contract Interface</strong>
+  <br/><br/>
+</p>
+
+<p align="center">
+  <img src="img/oracle_detection_calls_before)_release.png" alt="Oracle Detection Calls Before Release" width="800"/>
+  <br/>
+  <strong>Oracle Detection Calls Before Release</strong>
+  <br/><br/>
+</p>
+
+<p align="center">
+  <img src="img/completed_transactions.png" alt="Completed Transactions" width="800"/>
+  <br/>
+  <strong>Completed Transactions</strong>
+  <br/><br/>
+</p>
+
+<p align="center">
+  <img src="img/transaction_history.png" alt="Transaction History" width="800"/>
+  <br/>
+  <strong>Transaction History</strong>
+  <br/><br/>
+</p>
+
+<p align="center">
+  <img src="img/blockscout_view_of_contract_in_app.png" alt="Blockscout View of Contract in App" width="800"/>
+  <br/>
+  <strong>Blockscout View of Contract in App</strong>
+  <br/><br/>
+</p>
 
 ---
 

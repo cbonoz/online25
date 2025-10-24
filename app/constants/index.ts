@@ -46,13 +46,18 @@ export const CHAIN_MAP = {
 export const NETWORK = process.env.NEXT_PUBLIC_NETWORK
 export const ACTIVE_CHAIN =  NETWORK === 'mainnet' ? mainnet : sepolia;
 
-// Helper function to get explorer URL for current chain
-export const getExplorerUrl = (chainId = ACTIVE_CHAIN.id) => {
-    const chain = CHAIN_MAP[chainId] || sepolia;
-    return chain.blockExplorers?.default?.url || sepolia.blockExplorers.default.url;
+// Blockscout explorer URLs (prioritize Blockscout over Etherscan)
+const BLOCKSCOUT_URLS = {
+    [sepolia.id]: 'https://eth-sepolia.blockscout.com',
+    [mainnet.id]: 'https://eth.blockscout.com'
 };
 
-// Helper function to generate explorer links
+// Helper function to get Blockscout explorer URL for current chain
+export const getExplorerUrl = (chainId = ACTIVE_CHAIN.id) => {
+    return BLOCKSCOUT_URLS[chainId] || BLOCKSCOUT_URLS[sepolia.id];
+};
+
+// Helper function to generate Blockscout explorer links
 export const getExplorerLink = (address, type = 'address', chainId = ACTIVE_CHAIN.id) => {
     const baseUrl = getExplorerUrl(chainId);
     return `${baseUrl}/${type}/${address}`;

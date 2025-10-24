@@ -337,7 +337,7 @@ export default function MyEscrowsPage() {
                 </Text> */}
             </Card>
 
-            {oracleCheckComplete && !isFraudOracleActive && isContractAvailable() && (
+            {walletAddress && oracleCheckComplete && !isFraudOracleActive && isContractAvailable() && (
                 <Alert
                     message="No Fraud Oracle Configured"
                     description="The contract owner has not configured a fraud oracle. Fraud protection features are disabled."

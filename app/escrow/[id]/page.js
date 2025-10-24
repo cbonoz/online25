@@ -30,7 +30,7 @@ import {
 import { useWalletClient } from '../../hooks/useWalletClient';
 import { useWalletAddress } from '../../hooks/useWalletAddress';
 import { useBlockscout } from '../../hooks/useBlockscout';
-import { siteConfig, PYUSD_TOKEN_ADDRESS } from '../../constants';
+import { siteConfig, PYUSD_TOKEN_ADDRESS, ACTIVE_CHAIN, getExplorerUrl } from '../../constants';
 
 const { Title, Paragraph, Text } = Typography;
 const { Step } = Steps;
@@ -461,17 +461,11 @@ export default function EscrowDetailsPage() {
                             <Descriptions.Item label="Created">
                                 <Text>{new Date(escrowData.createdAt).toLocaleString()}</Text>
                             </Descriptions.Item>
-                            <Descriptions.Item label="Transaction Hash">
-                                <Text code>{escrowData.txHash}</Text>
-                                <Button 
-                                    type="link" 
-                                    size="small" 
-                                    icon={<EyeOutlined />}
-                                    href={`https://sepolia.etherscan.io/tx/${escrowData.txHash}`}
-                                    target="_blank"
-                                >
-                                    View on Etherscan
-                                </Button>
+                            <Descriptions.Item label="Escrow ID">
+                                <Text code>#{escrowData.id}</Text>
+                                <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>
+                                    (Search for this ID in contract transactions)
+                                </Text>
                             </Descriptions.Item>
                         </Descriptions>
                     </Card>
@@ -545,16 +539,18 @@ export default function EscrowDetailsPage() {
                                     Mark as Fraud
                                 </Button>
                             )}
-                            <Button 
-                                size="large" 
-                                block
-                                href={`https://sepolia.etherscan.io/address/${escrowData.txHash || escrowData.id}`}
-                                target="_blank"
-                                icon={<EyeOutlined />}
-                            >
-                                View on Explorer
-                            </Button>
-                           
+                            {isContractAvailable() && (
+                                <Button 
+                                    size="large" 
+                                    block
+                                    href={`${getExplorerUrl()}/address/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}?tab=txs`}
+                                    target="_blank"
+                                    icon={<LinkOutlined />}
+                                    title={`View all contract transactions on Blockscout. Filter by escrow ID #${escrowData.id} to find related transactions.`}
+                                >
+                                    View on Blockscout
+                                </Button>
+                            )}
                         </Space>
                     </Card>
 
@@ -573,9 +569,19 @@ export default function EscrowDetailsPage() {
                                 )}
                             </div>
                             {isFraudOracleActive && fraudOracleAddress && (
-                                <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    Fraud oracle: <Text code>{fraudOracleAddress.slice(0, 6)}...{fraudOracleAddress.slice(-4)}</Text>
-                                </Text>
+                                <div style={{ fontSize: '12px' }}>
+                                    <Text type="secondary">
+                                        Fraud oracle: 
+                                    </Text>
+                                    <a 
+                                        href={`${getExplorerUrl()}/address/${fraudOracleAddress}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ marginLeft: '4px' }}
+                                    >
+                                        <Text code>{fraudOracleAddress.slice(0, 6)}...{fraudOracleAddress.slice(-4)}</Text>
+                                    </a>
+                                </div>
                             )}
                             {!isFraudOracleActive && (
                                 <Text type="secondary" style={{ fontSize: '12px' }}>
