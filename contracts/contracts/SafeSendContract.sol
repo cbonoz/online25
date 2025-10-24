@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./IFraudOracle.sol";
 
 /**
  * @title SafeSendContract
@@ -93,7 +94,7 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
     
     constructor(address _pyusdToken, address _fraudOracle) Ownable(msg.sender) {
         require(_pyusdToken != address(0), "Invalid PYUSD token address");
-        // Note: _fraudOracle can be address(0) to disable oracle functionality
+        require(_fraudOracle != address(0), "Fraud oracle address required");
         
         pyusdToken = IERC20(_pyusdToken);
         fraudOracle = _fraudOracle;
@@ -124,6 +125,7 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
         escrowCounter++;
         uint256 escrowId = escrowCounter;
         
+        // Create escrow
         escrows[escrowId] = Escrow({
             id: escrowId,
             buyer: msg.sender,
@@ -139,6 +141,39 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
         sellerEscrows[seller].push(escrowId);
         
         emit Deposited(escrowId, msg.sender, seller, amount, description);
+        
+        // Check fraud oracle if configured
+        if (fraudOracle != address(0)) {
+            try IFraudOracle(fraudOracle).checkEscrow(
+                escrowId,
+                msg.sender,
+                seller,
+                amount
+            ) returns (bool isFlagged, string memory reason) {
+                if (isFlagged) {
+                    // Mark escrow as fraud flagged
+                    escrows[escrowId].fraudFlagged = true;
+                    escrows[escrowId].status = EscrowStatus.FraudFlagged;
+                    
+                    emit FraudFlagged(escrowId, fraudOracle);
+                    
+                    // Automatically refund the buyer
+                    require(
+                        pyusdToken.transfer(msg.sender, amount),
+                        "PYUSD refund transfer failed"
+                    );
+                    
+                    escrows[escrowId].status = EscrowStatus.Refunded;
+                    emit Refunded(escrowId, msg.sender, amount);
+                    
+                    // Revert with fraud reason
+                    revert(string(abi.encodePacked("Fraud detected: ", reason)));
+                }
+            } catch {
+                // Oracle call failed - continue with escrow creation
+                // This ensures the contract doesn't break if oracle is down
+            }
+        }
         
         return escrowId;
     }
@@ -272,4 +307,29 @@ contract SafeSendContract is Ownable, ReentrancyGuard {
     {
         return sellerEscrows[seller];
     }
+    
+    /**
+     * @dev Check if fraud oracle is configured
+     */
+    function isFraudOracleConfigured() external view returns (bool) {
+        return fraudOracle != address(0);
+    }
+    
+    /**
+     * @dev Query oracle for escrow fraud status (view function)
+     * @param escrowId ID of the escrow to check
+     */
+    function queryOracleStatus(uint256 escrowId)
+        external
+        view
+        escrowExists(escrowId)
+        returns (bool isFlagged, string memory reason)
+    {
+        if (fraudOracle == address(0)) {
+            return (false, "No oracle configured");
+        }
+        
+        return IFraudOracle(fraudOracle).isEscrowFlagged(escrowId);
+    }
 }
+

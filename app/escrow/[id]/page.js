@@ -30,7 +30,6 @@ import {
 import { useWalletClient } from '../../hooks/useWalletClient';
 import { useWalletAddress } from '../../hooks/useWalletAddress';
 import { useBlockscout } from '../../hooks/useBlockscout';
-import DemoModeAlert from '../../lib/DemoModeAlert';
 import { siteConfig, PYUSD_TOKEN_ADDRESS } from '../../constants';
 
 const { Title, Paragraph, Text } = Typography;
@@ -54,19 +53,25 @@ export default function EscrowDetailsPage() {
         showTokenTransactions 
     } = useBlockscout();
     const mountedRef = useRef(true);
+    const loadingTimeoutRef = useRef(null);
 
     // Cleanup function to prevent memory leaks
     useEffect(() => {
         return () => {
             mountedRef.current = false;
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+            }
         };
     }, []);
 
-    // Load escrow data from contract or mock data
+    // Load escrow data from contract
     useEffect(() => {
         // Don't load if no escrow ID
         if (!params.id) {
             console.log('No params.id, skipping load');
+            setError('No escrow ID provided');
+            setLoading(false);
             return;
         }
 
@@ -74,46 +79,39 @@ export default function EscrowDetailsPage() {
         let isCancelled = false;
 
         const loadEscrowData = async () => {
+            console.log('=== Starting loadEscrowData ===');
+            console.log('params.id:', params.id);
+            
             if (mountedRef.current && !isCancelled) {
                 setLoading(true);
                 setError(null);
-            }
-            
-            if (!isContractAvailable()) {
-                // Use mock data in demo mode
-                setTimeout(() => {
-                    if (mountedRef.current && !isCancelled) {
-                        setEscrowData({
-                            id: params.id || 'escrow-1',
-                            amount: '500.00',
-                            buyer: '0x1234567890abcdef1234567890abcdef12345678',
-                            seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
-                            status: EscrowStatus.Active,
-                            statusText: 'Active',
-                            description: 'Website development project - Full stack e-commerce platform',
-                            createdAt: '2025-01-10T14:30:00Z',
-                            lastUpdated: '2025-01-10T14:30:00Z',
-                            txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-                            oracleAddress: '0x9876543210fedcba9876543210fedcba98765432',
-                            fraudFlagged: false,
-                            events: [
-                                {
-                                    type: 'Deposited',
-                                    timestamp: '2025-01-10T14:30:00Z',
-                                    description: 'PYUSD deposited into escrow contract',
-                                    txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
-                                }
-                            ]
-                        });
-                    }
-                    if (mountedRef.current && !isCancelled) {
+                
+                // Set a safety timeout in case the request hangs
+                loadingTimeoutRef.current = setTimeout(() => {
+                    if (mountedRef.current && !isCancelled && loading) {
+                        console.warn('Loading timeout reached after 20 seconds');
+                        setError('Request timed out. Please check your network connection and try again.');
                         setLoading(false);
                     }
-                }, 1000);
+                }, 20000); // 20 second safety timeout
+            }
+            
+            // Check if contract is available
+            const contractAvailable = isContractAvailable();
+            console.log('Contract available?', contractAvailable);
+            
+            if (!contractAvailable) {
+                const errorMessage = 'Contract address not configured. Please set NEXT_PUBLIC_CONTRACT_ADDRESS environment variable.';
+                console.error(errorMessage);
+                if (mountedRef.current && !isCancelled) {
+                    setError(errorMessage);
+                    setEscrowData(null);
+                    setLoading(false);
+                }
                 return;
             }
 
-            // Try to load from contract
+            // Load from contract
             try {
                 const escrowId = parseInt(params.id);
                 
@@ -121,13 +119,25 @@ export default function EscrowDetailsPage() {
                     throw new Error(`Invalid escrow ID: ${params.id}. Please provide a valid numeric escrow ID.`);
                 }
                 
+                console.log('Loading escrow from contract:', escrowId);
+                console.log('Calling getEscrow...');
+                
                 const data = await getEscrow(escrowId);
                 
+                console.log('getEscrow completed successfully:', data);
+                console.log('mountedRef.current:', mountedRef.current);
+                console.log('isCancelled:', isCancelled);
+                
                 if (mountedRef.current && !isCancelled) {
+                    console.log('Setting escrow data...');
                     setEscrowData(data);
                     setError(null);
+                    console.log('Escrow data set successfully');
+                } else {
+                    console.warn('Component unmounted or cancelled, not setting data');
                 }
             } catch (error) {
+                console.error('Error loading escrow:', error);
                 // Handle specific error types
                 let errorMessage = 'Failed to load escrow data';
                 
@@ -136,7 +146,7 @@ export default function EscrowDetailsPage() {
                 } else if (error.message.includes('Invalid escrow ID')) {
                     errorMessage = error.message;
                 } else if (error.message.includes('Contract not available')) {
-                    errorMessage = 'Contract is not available. Please try again later.';
+                    errorMessage = 'Contract is not available. Please check your network connection and contract configuration.';
                 } else {
                     errorMessage = `Error loading escrow: ${error.message}`;
                 }
@@ -146,8 +156,18 @@ export default function EscrowDetailsPage() {
                     setEscrowData(null);
                 }
             } finally {
+                console.log('In finally block - mountedRef.current:', mountedRef.current, 'isCancelled:', isCancelled);
                 if (mountedRef.current && !isCancelled) {
+                    console.log('Setting loading to false');
                     setLoading(false);
+                    // Clear the safety timeout
+                    if (loadingTimeoutRef.current) {
+                        clearTimeout(loadingTimeoutRef.current);
+                        loadingTimeoutRef.current = null;
+                    }
+                    console.log('Loading state should now be false');
+                } else {
+                    console.warn('Component unmounted in finally block');
                 }
             }
         };
@@ -157,17 +177,22 @@ export default function EscrowDetailsPage() {
         // Return cleanup function
         return () => {
             isCancelled = true;
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+            }
         };
     }, [params.id]); // Only depend on params.id
 
     // Load fraud oracle information
     useEffect(() => {
         const loadFraudOracleInfo = async () => {
-            if (!isContractAvailable() || !walletAddress) {
-                // Demo mode - mock fraud oracle
-                setFraudOracleAddress('0x9876543210fedcba9876543210fedcba98765432');
-                setIsUserFraudOracle(false);
-                setIsFraudOracleActive(true);
+            if (!isContractAvailable()) {
+                console.log('Contract not available, skipping fraud oracle check');
+                return;
+            }
+
+            if (!walletAddress) {
+                console.log('No wallet address, skipping fraud oracle check');
                 return;
             }
 
@@ -197,13 +222,13 @@ export default function EscrowDetailsPage() {
     }, [walletAddress]);
 
     const handleRelease = async () => {
-        if (!isContractAvailable()) {
-            message.info('Running in demo mode - would release funds in production');
+        if (!walletClient) {
+            message.error('Please connect your wallet first');
             return;
         }
 
-        if (!walletClient) {
-            message.error('Please connect your wallet first');
+        if (!isContractAvailable()) {
+            message.error('Contract not available. Please check configuration.');
             return;
         }
 
@@ -230,13 +255,13 @@ export default function EscrowDetailsPage() {
     };
 
     const handleRefund = async () => {
-        if (!isContractAvailable()) {
-            message.info('Running in demo mode - would process refund in production');
+        if (!walletClient) {
+            message.error('Please connect your wallet first');
             return;
         }
 
-        if (!walletClient) {
-            message.error('Please connect your wallet first');
+        if (!isContractAvailable()) {
+            message.error('Contract not available. Please check configuration.');
             return;
         }
 
@@ -263,13 +288,13 @@ export default function EscrowDetailsPage() {
     };
 
     const handleMarkFraud = async () => {
-        if (!isContractAvailable()) {
-            message.info('Running in demo mode - would mark fraud in production');
+        if (!walletClient) {
+            message.error('Please connect your wallet first');
             return;
         }
 
-        if (!walletClient) {
-            message.error('Please connect your wallet first');
+        if (!isContractAvailable()) {
+            message.error('Contract not available. Please check configuration.');
             return;
         }
 
@@ -365,6 +390,9 @@ export default function EscrowDetailsPage() {
             }
         }
     };
+
+    // Debug: Log render state
+    console.log('Render - loading:', loading, 'error:', error, 'escrowData:', escrowData);
 
     // Handle loading state
     if (loading) {
@@ -466,10 +494,6 @@ export default function EscrowDetailsPage() {
                 </Button>
                 {/* <Text code style={{ fontSize: '16px' }}>{escrowData.id}</Text> */}
             </div>
-
-            <DemoModeAlert 
-                description="This shows sample escrow details. In production, this would display real-time blockchain data."
-            />
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
                 {/* Main Content */}

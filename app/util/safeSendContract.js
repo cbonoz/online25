@@ -10,10 +10,14 @@ import { handleContractError, formatDate } from '.';
 import { PYUSD_TOKEN_ADDRESS, ACTIVE_CHAIN, siteConfig } from '../constants';
 import { SAFESEND_CONTRACT } from './metadata';
 
-// Create a public client for reading from the chain
+// Create a public client for reading from the chain with timeout
 const publicClient = createPublicClient({
     chain: ACTIVE_CHAIN,
-    transport: http()
+    transport: http(undefined, {
+        timeout: 10_000, // 10 second timeout for RPC calls
+        retryCount: 2,
+        retryDelay: 1000
+    })
 });
 
 // Helper function to check if SafeSend contract is deployed and available
@@ -171,6 +175,16 @@ export const refundEscrow = async (walletClient, escrowId) => {
     }
 };
 
+// Helper to add timeout to async operations
+const withTimeout = (promise, timeoutMs = 15000, errorMessage = 'Operation timed out') => {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+        )
+    ]);
+};
+
 // Get escrow details by ID
 export const getEscrow = async (escrowId) => {
     try {
@@ -180,12 +194,21 @@ export const getEscrow = async (escrowId) => {
 
         const contractAddress = getContractAddress();
         
-        const escrow = await publicClient.readContract({
-            address: contractAddress,
-            abi: SAFESEND_CONTRACT.abi,
-            functionName: 'getEscrow',
-            args: [escrowId]
-        });
+        console.log('Fetching escrow from blockchain:', { escrowId, contractAddress });
+        
+        // Add timeout to prevent infinite hanging
+        const escrow = await withTimeout(
+            publicClient.readContract({
+                address: contractAddress,
+                abi: SAFESEND_CONTRACT.abi,
+                functionName: 'getEscrow',
+                args: [escrowId]
+            }),
+            15000, // 15 second timeout
+            `Request timed out while loading escrow #${escrowId}. Please check your network connection and try again.`
+        );
+
+        console.log('Escrow data received:', escrow);
 
         return {
             id: Number(escrow.id),
@@ -197,6 +220,7 @@ export const getEscrow = async (escrowId) => {
             statusText: getStatusText(escrow.status),
             createdAt: formatDate(new Date(Number(escrow.createdAt) * 1000)),
             fraudFlagged: escrow.fraudFlagged,
+            txHash: escrow.txHash || '', // Add txHash if available
             events: [
                 {
                     type: 'Deposited',
@@ -207,9 +231,15 @@ export const getEscrow = async (escrowId) => {
         };
     } catch (error) {
         console.error('Error getting escrow:', error);
+        
+        // Check for timeout errors
+        if (error.message && error.message.includes('timed out')) {
+            throw error; // Re-throw timeout errors directly
+        }
+        
         // Handle the error and throw the processed error message
         handleContractError(error, 'get escrow');
-        // Don't throw the original error again, handleContractError already throws
+        throw error; // Ensure error is thrown
     }
 };
 
@@ -416,10 +446,50 @@ export const isFraudOracleConfigured = async () => {
             return false;
         }
 
-        const oracleAddress = await getFraudOracle();
-        return oracleAddress && oracleAddress !== '0x0000000000000000000000000000000000000000';
+        const contractAddress = getContractAddress();
+        
+        const isConfigured = await publicClient.readContract({
+            address: contractAddress,
+            abi: SAFESEND_CONTRACT.abi,
+            functionName: 'isFraudOracleConfigured'
+        });
+
+        return isConfigured;
     } catch (error) {
         console.error('Error checking fraud oracle configuration:', error);
-        return false;
+        // Fallback to old method if new function not available
+        try {
+            const oracleAddress = await getFraudOracle();
+            return oracleAddress && oracleAddress !== '0x0000000000000000000000000000000000000000';
+        } catch {
+            return false;
+        }
+    }
+};
+
+// Query oracle for escrow fraud status
+export const queryOracleStatus = async (escrowId) => {
+    try {
+        if (!isContractAvailable()) {
+            throw new Error('Contract not available - running in demo mode');
+        }
+
+        const contractAddress = getContractAddress();
+        
+        const result = await publicClient.readContract({
+            address: contractAddress,
+            abi: SAFESEND_CONTRACT.abi,
+            functionName: 'queryOracleStatus',
+            args: [escrowId]
+        });
+
+        return {
+            isFlagged: result[0],
+            reason: result[1]
+        };
+    } catch (error) {
+        console.error('Error querying oracle status:', error);
+        handleContractError(error, 'query oracle status');
+        throw error;
     }
 };
