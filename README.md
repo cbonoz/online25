@@ -1,5 +1,9 @@
 # SafeSend – PYUSD Consumer Protection On-Chain
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cbonoz/online25/refs/heads/main/public/logo.png" alt="SafeSend Logo" width="200"/>
+</p>
+
 > Bringing PayPal-like consumer protection to on-chain stablecoin payments using fraud oracles and transparent smart contracts.
 
 ## The Problem
