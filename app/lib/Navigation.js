@@ -30,7 +30,7 @@ export default function Navigation() {
             icon: <PlusOutlined />, 
             path: '/escrow'
         },
-        !isEscrowPage && {
+        !isEscrowPage && walletAddress && {
             key: 'my-escrows',
             label: 'My Escrows',
             icon: <HomeOutlined style={{ color: '#4f4d4c' }} />, 
