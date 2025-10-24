@@ -2,128 +2,141 @@
 
 > Bringing PayPal-like consumer protection to on-chain stablecoin payments using fraud oracles and transparent smart contracts.
 
-**SafeSend** is a Next.js web application with Solidity smart contracts that provides secure escrow services for PYUSD stablecoin transactions. It introduces on-chain consumer protection through automated fraud detection and transparent oracle-based arbitration, bringing Web2-style payment confidence to Web3.
+## The Problem
+
+Traditional payment systems on Web2 offer robust buyer protection and fraud detection, but can often come with high fees (2-3% per transaction) and centralized control. Meanwhile, Web3 payments offer low costs and transparency but lack consumer protection—once you send crypto, it's gone. Users are left choosing between safety and cost-efficiency.
+
+**SafeSend** is a decentralized escrow platform built on Ethereum that combines the security of traditional payment processors with the low-cost transparency of blockchain technology. By using PYUSD (PayPal's regulated stablecoin) and a modular fraud oracle architecture, SafeSend enables:
+
+**🛡️ Enterprise-Grade Fraud Protection at Blockchain Costs**
+- Real-time fraud detection during every transaction
+- Automatic buyer refunds when fraud is detected
+- No 2-3% payment processing fees—just gas costs
+
+**🔄 Evolving Security Without Contract Redeployment**
+- Fraud detection algorithm lives in a separate, upgradeable oracle contract
+- New fraud patterns can be detected by simply updating the oracle
+- SafeSendContract remains immutable while security evolves
+- Oracle maintained by specialized fraud detection authorities
+
+**💰 Cost-Effective Fraud Prevention**
+- One-time oracle consultation per escrow (~$0.50-2 in gas)
+- Compare to: 2-3% fee on a $1,000 transaction = $20-30
+- Significant cost reduction while maintaining security
+
+**⚖️ Transparent Trust Model**
+- Oracle address publicly viewable and verifiable
+- All fraud decisions logged on-chain with reasons
+- Users choose which oracle-enabled contracts to trust
+- No black-box algorithms or arbitrary account freezes
+
+## How It Works
+
+SafeSend uses a **modular oracle pattern** where the payment escrow contract (SafeSendContract) consults an external fraud detection oracle (SimpleFraudOracle) through a standardized interface (IFraudOracle). This architectural separation enables:
+
+1. **Immutable Payment Logic** - Core escrow contract never needs updates
+2. **Evolving Fraud Detection** - Oracle can be upgraded as new threats emerge
+3. **Specialized Expertise** - Fraud detection maintained by security specialists
+4. **User Choice** - Different oracles for different risk tolerances
+5. **Cost Efficiency** - Single oracle call replaces expensive off-chain verification
+
+The oracle evaluates transactions against blacklists, amount limits, behavioral patterns, and manual flags—returning a simple pass/fail decision. Flagged transactions are automatically refunded, protecting buyers without manual dispute resolution.
 
 ## System Architecture & User Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          SAFESEND ARCHITECTURE                           │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                       SAFESEND ARCHITECTURE                           │
+└──────────────────────────────────────────────────────────────────────┘
 
-┌─────────────┐
-│    USER     │  1. Connect Wallet
-│   (Buyer)   │  2. Approve PYUSD
-└──────┬──────┘  3. Create Escrow
-       │
-       ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         NEXT.JS WEB APPLICATION                          │
-│                                                                           │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌──────────────────────┐  │
-│  │  Create Escrow  │  │  My Escrows      │  │  Escrow Details      │  │
-│  │  - Form Input   │  │  - List View     │  │  - Release Funds     │  │
-│  │  - Amount/Desc  │  │  - Buyer/Seller  │  │  - Request Refund    │  │
-│  └────────┬────────┘  └────────┬─────────┘  └──────────┬───────────┘  │
-│           │                    │                        │               │
-│           └────────────────────┼────────────────────────┘               │
-│                                │                                         │
-│  ┌─────────────────────────────▼─────────────────────────────────────┐ │
-│  │              Viem + Dynamic Wallet Integration                     │ │
-│  │  - Contract interactions via TypeScript-first Ethereum library     │ │
-│  │  - Multi-wallet support (MetaMask, Coinbase, WalletConnect, etc.) │ │
-│  └─────────────────────────────┬─────────────────────────────────────┘ │
-└────────────────────────────────┼───────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      ETHEREUM BLOCKCHAIN (Sepolia)                       │
-│                                                                           │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                      PYUSD Token Contract                           │ │
-│  │  ERC-20: 0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9 (Sepolia)      │ │
-│  └──────────────────────┬─────────────────────────────────────────────┘ │
-│                         │ approve() / transferFrom()                    │
-│                         ▼                                                │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                    SAFESENDCONTRACT.SOL                             │ │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │ │
-│  │  │ deposit(seller, amount, description)                          │  │ │
-│  │  │   1. Transfer PYUSD from buyer to contract                    │  │ │
-│  │  │   2. Create escrow record (ID, buyer, seller, amount, etc.)   │  │ │
-│  │  │   3. Emit Deposited event                                     │  │ │
-│  │  │   4. ─────┐                                                   │  │ │
-│  │  │           ▼                                                   │  │ │
-│  │  │   ┌────────────────────────────────────────────┐             │  │ │
-│  │  │   │ Oracle Fraud Check (IFraudOracle)          │             │  │ │
-│  │  │   │ try {                                       │             │  │ │
-│  │  │   │   (isFlagged, reason) =                    │ ◄───────────┼──┼─┐
-│  │  │   │     oracle.checkEscrow(id, buyer,          │             │  │ │
-│  │  │   │                       seller, amount)       │             │  │ │
-│  │  │   │   if (isFlagged) {                         │             │  │ │
-│  │  │   │     - Mark as FraudFlagged                 │             │  │ │
-│  │  │   │     - Refund buyer immediately             │             │  │ │
-│  │  │   │     - Emit FraudFlagged event              │             │  │ │
-│  │  │   │     - Revert with reason                   │             │  │ │
-│  │  │   │   }                                         │             │  │ │
-│  │  │   │ } catch { /* Continue if oracle fails */ } │             │  │ │
-│  │  │   └────────────────────────────────────────────┘             │  │ │
-│  │  │   5. Return escrowId (if not flagged)                        │  │ │
-│  │  └──────────────────────────────────────────────────────────────┘  │ │
-│  │                                                                      │ │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │ │
-│  │  │ release(escrowId)         - Buyer releases to seller         │  │ │
-│  │  │ refund(escrowId)          - Buyer/Oracle refunds buyer       │  │ │
-│  │  │ markFraud(escrowId)       - Oracle flags fraud (auto refund) │  │ │
-│  │  │ updateFraudOracle(address) - Owner changes oracle            │  │ │
-│  │  └──────────────────────────────────────────────────────────────┘  │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                         │                                                │
-│                         ▼ Implements IFraudOracle Interface             │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │             SIMPLEFRAUDORACLE.SOL (Modular & Upgradeable)          │ │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │ │
-│  │  │ interface IFraudOracle {                                      │  │ │
-│  │  │   function checkEscrow(id, buyer, seller, amount)            │  │ │
-│  │  │     returns (bool isFlagged, string memory reason);          │  │ │
-│  │  │   function isEscrowFlagged(id)                               │  │ │
-│  │  │     returns (bool isFlagged, string memory reason);          │  │ │
-│  │  │ }                                                             │  │ │
-│  │  └──────────────────────────────────────────────────────────────┘  │ │
-│  │                                                                      │ │
-│  │  Fraud Detection Logic:                                              │ │
-│  │  ✓ Blacklist Check        - Block known bad actors                  │ │
-│  │  ✓ Amount Limit Check     - Reject transactions > 5000 PYUSD        │ │
-│  │  ✓ Same Address Check     - Buyer ≠ Seller validation               │ │
-│  │  ✓ Manual Flag Check      - Owner flagged escrows                   │ │
-│  │  ✓ Dispute Window Tracking - 7-day dispute period                   │ │
-│  │                                                                      │ │
-│  │  Owner Functions (Maintained by External Authority):                │ │
-│  │  - blacklistAddress(addr, reason)    Add to blacklist               │ │
-│  │  - whitelistAddress(addr)            Remove from blacklist          │ │
-│  │  - flagEscrow(id, addr, reason)      Manual fraud flag              │ │
-│  │  - clearFlag(id)                     Remove fraud flag              │ │
-│  │  - setMaxTransactionAmount(amount)   Update limits                  │ │
-│  │  - setDisputeWindow(seconds)         Configure dispute period       │ │
-│  │                                                                      │ │
-│  │  ⚠️  MODULARITY: Oracle can be replaced without touching            │ │
-│  │      SafeSendContract. Just deploy new oracle implementing          │ │
-│  │      IFraudOracle and call updateFraudOracle(newAddress)            │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                           │
-└───────────────────────────────────────┬───────────────────────────────────┘
-                                        │
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    BLOCKSCOUT EXPLORER & SDK INTEGRATION                 │
-│                                                                           │
-│  Real-time Monitoring:                                                   │
-│  ✓ Transaction toast notifications with status updates                  │
-│  ✓ Transaction history popups (contract/wallet/token)                   │
-│  ✓ Event logs (Deposited, Released, Refunded, FraudFlagged)            │
-│  ✓ Complete audit trail for dispute resolution                          │
-│  ✓ Public verification of all oracle decisions                          │
-└─────────────────────────────────────────────────────────────────────────┘
+                     ┌─────────────────────┐
+                     │       USER          │
+                     │  (Buyer / Seller)   │
+                     └──────────┬──────────┘
+                                │
+                                │ Connect Wallet
+                                │ Create/Manage Escrows
+                                ▼
+              ┌──────────────────────────────────────┐
+              │     NEXT.JS WEB APPLICATION          │
+              │  ┌────────────────────────────────┐  │
+              │  │  • Create Escrow Form          │  │
+              │  │  • My Escrows Dashboard        │  │
+              │  │  • Escrow Details & Actions    │  │
+              │  └────────────────────────────────┘  │
+              │                                       │
+              │  ┌────────────────────────────────┐  │
+              │  │  Viem + Dynamic SDK            │  │
+              │  │  (Wallet Integration Layer)    │  │
+              │  └────────────────────────────────┘  │
+              └───────────────┬───────────────────────┘
+                              │
+                              │ Transaction Signing
+                              │ Contract Interactions
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                   ETHEREUM BLOCKCHAIN (Sepolia)                      │
+│                                                                       │
+│  ┌──────────────────┐         ┌─────────────────────────────────┐  │
+│  │  PYUSD TOKEN     │────────▶│    SAFESENDCONTRACT.SOL         │  │
+│  │  (ERC-20)        │ approve │                                 │  │
+│  │                  │ transfer│  • deposit() - Create Escrow    │  │
+│  └──────────────────┘         │  • release() - Complete Payment │  │
+│                                │  • refund() - Cancel & Refund   │  │
+│                                │  • markFraud() - Flag Fraud     │  │
+│                                └────────┬────────────────────────┘  │
+│                                         │                            │
+│                                         │ Oracle Fraud Check         │
+│                                         │ (via IFraudOracle)         │
+│                                         ▼                            │
+│                                ┌─────────────────────────────────┐  │
+│                                │  SIMPLEFRAUDORACLE.SOL          │  │
+│                                │  (Modular & Upgradeable)        │  │
+│                                │                                 │  │
+│                                │  • checkEscrow()                │  │
+│                                │  • Blacklist Management         │  │
+│                                │  • Transaction Limits           │  │
+│                                │  • Manual Fraud Flagging        │  │
+│                                │                                 │  │
+│                                │  ⚠️  Maintained by External     │  │
+│                                │     Authority - Swappable       │  │
+│                                └─────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              │ Event Emission
+                              │ (Deposited, Released, Refunded, etc.)
+                              ▼
+              ┌──────────────────────────────────────┐
+              │   BLOCKSCOUT EXPLORER & SDK          │
+              │                                       │
+              │  • Real-time Transaction Monitoring  │
+              │  • Event Logs & Audit Trail          │
+              │  • Public Oracle Verification        │
+              └──────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════
+KEY ARCHITECTURAL PRINCIPLES
+═══════════════════════════════════════════════════════════════════════
+
+🔌 MODULAR ORACLE DESIGN
+   → Oracle implements IFraudOracle interface for standardization
+   → Can be swapped without redeploying main payment contract
+   → Maintained independently by fraud detection specialists
+
+⚡ AUTOMATIC FRAUD PREVENTION
+   → Oracle consulted during every escrow creation
+   → Flagged transactions auto-refund + revert immediately
+   → Graceful degradation if oracle unavailable
+
+🔍 TRANSPARENT & AUDITABLE
+   → All decisions logged as on-chain events
+   → Public oracle address verification
+   → Complete history on Blockscout/Etherscan
+
+💵 PYUSD STABLECOIN INTEGRATION
+   → Regulated stablecoin for real-world value
+   → Standard ERC-20 approve/transfer flow
+```
 
 KEY FEATURES:
 ═════════════
@@ -156,52 +169,22 @@ KEY FEATURES:
 
 ## Features
 
-### Core Escrow Features
-* **PYUSD Escrow** – Secure smart contract holds buyer funds until transaction completion
-* **Buyer Protection** – Buyers can release funds to sellers or request refunds
-* **Seller Transparency** – All escrow terms and status visible on-chain
-* **Multi-Party Support** – Track escrows as buyer, seller, or observer
-* **Real-Time Status** – Live updates on escrow state (Active, Released, Refunded, Fraud Flagged)
-
-### Fraud Protection System
-* **Automated Fraud Detection** – SimpleFraudOracle performs instant checks on escrow creation
-* **Blacklist Management** – Prevent known bad actors from participating
-* **Amount Limits** – Configurable maximum transaction amounts (default: 5000 PYUSD)
-* **Same-Address Protection** – Prevents buyer and seller being the same address
-* **Manual Flagging** – Oracle owner can manually flag suspicious transactions
-* **Automatic Refunds** – Flagged transactions immediately refund the buyer
-* **Dispute Window** – 7-day dispute period tracking for review
-
-### Integration Features
-* **Blockscout SDK Integration** – Real-time transaction monitoring and explorer popups
-* **Dynamic Wallet Connect** – Easy wallet connection with multiple provider support
-* **Transaction Notifications** – Non-blocking toast notifications for all operations
-* **Explorer Links** – Direct links to Etherscan/Blockscout for all transactions
-* **Event Logging** – Complete audit trail with `Deposited`, `Released`, `Refunded`, and `FraudFlagged` events
+* **PYUSD Escrow** – Secure smart contract holds buyer funds until completion
+* **Automated Fraud Detection** – Real-time checks with automatic refunds for flagged transactions
+* **Buyer Protection** – Release funds or request refunds with transparent on-chain status
+* **Blockscout SDK Integration** – Real-time transaction monitoring and explorer integration
+* **Multi-Wallet Support** – Dynamic wallet connection (MetaMask, Coinbase, WalletConnect, etc.)
+* **Complete Audit Trail** – All actions emit on-chain events viewable on explorers
 
 ---
 
 ## Tech Stack
 
-### Frontend
-* **Next.js 14** – App router with React Server Components
-* **Ant Design (antd)** – UI components for forms, tables, cards, and modals
-* **Viem** – Modern TypeScript-first Ethereum library for contract interactions
-* **Dynamic** – Wallet connection and authentication
-* **Blockscout App SDK** – Transaction notifications and explorer integration
+**Frontend:** Next.js 14, Ant Design, Viem, Dynamic Wallet SDK, Blockscout App SDK
 
-### Smart Contracts
-* **Solidity ^0.8.28** – Contract language
-* **Hardhat** – Development, testing, and deployment framework
-* **OpenZeppelin** – Battle-tested contract libraries (Ownable, ReentrancyGuard, ERC20)
-* **Hardhat Ignition** – Declarative deployment management
+**Smart Contracts:** Solidity ^0.8.28, Hardhat, OpenZeppelin, Hardhat Ignition
 
-### Blockchain Integration
-* **PYUSD Token** – PayPal's regulated stablecoin (6 decimals)
-  - Mainnet: `0x6c3ea9036406852006290770BEdFcAbA0e23A0e8`
-  - Sepolia: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
-* **Networks**: Ethereum Mainnet & Sepolia Testnet
-* **Explorers**: Blockscout & Etherscan for transaction monitoring
+**Blockchain:** PYUSD Token (Mainnet: `0x6c3...0e8`, Sepolia: `0xCaC...bB9`), Ethereum Mainnet & Sepolia Testnet
 
 ## Sponsors
 
@@ -233,162 +216,55 @@ In essence, SafeSend combines on-chain logic, stablecoin security, and open atte
 
 ### SafeSendContract Flow
 
-1. **Create Escrow**
-   - Buyer approves PYUSD spending for the SafeSendContract
-   - Buyer calls `deposit(seller, amount, description)` with escrow details
-   - PYUSD transfers from buyer to contract
-   - Escrow ID generated (starts at 10001 for better UX)
-   - Fraud oracle automatically checks the transaction
-   - If fraud detected: immediate refund + transaction reverts
-   - If clean: escrow created in Active state
+1. **Create Escrow** - Buyer approves PYUSD → calls `deposit()` → contract transfers funds and creates escrow → oracle checks for fraud (blacklist, amount limits, same-address) → if flagged: auto-refund + revert, if clean: escrow created with ID
 
-2. **Transaction Flow**
-   - **Normal Completion**: Buyer calls `release(escrowId)` to send funds to seller
-   - **Dispute/Issue**: Buyer calls `refund(escrowId)` to get funds back
-   - **Fraud Detection**: Oracle calls `markFraud(escrowId)` for automatic buyer refund
+2. **Transaction Outcomes**
+   - **Normal**: Buyer calls `release()` → funds sent to seller
+   - **Dispute**: Buyer calls `refund()` → funds returned to buyer
+   - **Fraud**: Oracle calls `markFraud()` → automatic buyer refund
 
-3. **Fraud Detection**
-   - SimpleFraudOracle runs checks on escrow creation:
-     - Blacklist verification (buyer & seller)
-     - Amount limit validation
-     - Same-address detection
-     - Manual flag check
-   - Oracle can flag existing escrows manually
-   - Flagged escrows automatically refund the buyer
+3. **Oracle Controls** - Blacklist management, transaction limits, manual flagging, dispute window configuration
 
-4. **State Management**
-   - **Active**: Escrow is open, funds locked in contract
-   - **Released**: Funds successfully sent to seller
-   - **Refunded**: Funds returned to buyer
-   - **FraudFlagged**: Oracle detected fraud, funds refunded
+4. **Event Transparency** - All actions emit indexed events (`Deposited`, `Released`, `Refunded`, `FraudFlagged`) viewable on Blockscout/Etherscan
 
-5. **Event Transparency**
-   - All actions emit events viewable on Blockscout/Etherscan
-   - Complete audit trail for dispute resolution
-   - Public verification of oracle decisions
+### Blockscout SDK Integration
 
-### Blockscout SDK Integration Points
+The Blockscout SDK provides real-time transaction monitoring throughout SafeSend:
 
-The Blockscout SDK is integrated throughout the SafeSend application to provide real-time transaction monitoring and instant explorer feedback:
-
-**1. Transaction Toast Notifications**
-- Automatically triggered after every escrow operation (create, release, refund, fraud marking)
-- Shows real-time transaction status (pending → success/error)
-- Displays transaction interpretation and summaries
-- Links directly to Blockscout explorer for detailed view
-- Implements automatic status polling for confirmation updates
-
-**2. Transaction History Popups**
-- **Global Navigation**: "Transactions" button in main navigation opens chain-wide activity
-- **Escrow Details Page**: Three dedicated buttons for Contract/PYUSD/User transaction history
-- **My Escrows Page**: Transaction monitoring card with quick access to all activity types
-- **Main Page**: Interactive demo section showcasing Blockscout integration features
-
-**3. Technical Implementation**
-```
-app/
-  lib/
-    BlockscoutProviders.js   # SDK providers wrapper (NotificationProvider + TransactionPopupProvider)
-    BlockscoutDemo.js        # Interactive demo component for main page
-  hooks/
-    useBlockscout.js         # Custom hook wrapping SDK with app-specific configuration
-  escrow/
-    [id]/page.js            # Transaction notifications + history buttons on escrow details
-    page.js                 # Transaction notifications on escrow creation
-  my-escrows/
-    page.js                 # Transaction monitoring card with activity viewers
-```
-
-**4. User Experience Flow**
-- User creates escrow → Instant toast notification with transaction status
-- User views escrow details → Quick access buttons to view contract/token/wallet history
-- User releases/refunds → Real-time notification with confirmation status
-- User explores transactions → One-click access to comprehensive Blockscout explorer data
+- **Toast Notifications** - Instant status updates for all escrow operations (pending → confirmed)
+- **Transaction History Popups** - One-click access to contract, wallet, and PYUSD token activity
+- **Explorer Links** - Direct integration with Blockscout explorer for detailed transaction views
+- **Event Monitoring** - Public audit trail of all escrow events and oracle decisions
 
 
 ## Fraud Oracle Architecture
 
 ### IFraudOracle Interface
 
-SafeSend uses a standardized `IFraudOracle` interface that any fraud detection contract can implement:
-
-```solidity
-interface IFraudOracle {
-    // Called automatically during escrow deposit
-    function checkEscrow(
-        uint256 escrowId,
-        address buyer,
-        address seller,
-        uint256 amount
-    ) external returns (bool isFlagged, string memory reason);
-    
-    // View function to check if escrow is flagged
-    function isEscrowFlagged(uint256 escrowId) 
-        external view 
-        returns (bool isFlagged, string memory reason);
-}
-```
+SafeSend uses a standardized `IFraudOracle` interface with two key functions: `checkEscrow()` (automatic checks during deposit) and `isEscrowFlagged()` (view flagged status). Any contract implementing this interface can serve as a fraud oracle.
 
 ### SimpleFraudOracle Implementation
 
-The included `SimpleFraudOracle` contract provides basic fraud detection:
+The included `SimpleFraudOracle` performs automatic checks (blacklist verification, amount limits, same-address detection, manual flags) and provides owner controls for blacklist management, transaction limits, and manual flagging.
 
-**Automatic Checks (run on escrow creation):**
-- Blacklist verification for buyer and seller addresses
-- Amount limit enforcement (default 5000 PYUSD)
-- Same-address detection (buyer ≠ seller)
-- Manual flag check
+### Integration & Deployment
 
-**Owner Controls:**
-- `blacklistAddress(address, reason)` - Add addresses to blacklist
-- `whitelistAddress(address)` - Remove from blacklist
-- `flagEscrow(escrowId, address, reason)` - Manually flag suspicious transactions
-- `clearFlag(escrowId)` - Remove fraud flag
-- `setMaxTransactionAmount(amount)` - Update limit
-- `setDisputeWindow(seconds)` - Configure dispute period
+- One oracle per SafeSendContract deployment (updatable by owner via `updateFraudOracle()`)
+- Deploy options: SimpleFraudOracle (`yarn deploy:with-oracle`), custom oracle, third-party API, or multi-sig
+- Oracle failures are handled gracefully with `try/catch` - escrows proceed if oracle is unavailable
+- Oracle address and all fraud decisions are publicly auditable on-chain
 
-### Integration Model
+## Why This Can Be Trusted
 
-**Per-Deployment Configuration:**
-- One fraud oracle per SafeSendContract deployment
-- Oracle address set during contract deployment
-- Can be updated by contract owner via `updateFraudOracle(newAddress)`
-- All escrows in that deployment use the same oracle
+**Open Source & Auditable** - Smart contracts are fully deployed and verifiable on Blockscout/Etherscan with complete source code.
 
-**Deployment Options:**
-- **With SimpleFraudOracle**: `yarn deploy:with-oracle` (recommended)
-- **Custom Oracle**: Deploy implementing IFraudOracle interface
-- **Third-Party Service**: Integrate external fraud detection API
-- **Multi-Sig Oracle**: Use Gnosis Safe or similar for distributed control
+**Automated Protection** - Funds are only released or refunded based on on-chain logic and oracle attestations, not arbitrary admin decisions.
 
-### Oracle Failure Handling
+**Transparent Events** - Every action emits an on-chain event for public verification. Oracle address and decisions are publicly viewable.
 
-The SafeSendContract is resilient to oracle failures:
-- Oracle calls are wrapped in `try/catch`
-- If oracle is down or throws error, escrow proceeds normally
-- Contract doesn't break if oracle is misconfigured
-- Users can still create escrows even if oracle is unavailable
+**Regulated Stablecoin** - PYUSD is PayPal's regulated stablecoin, ensuring real-world value and predictable settlement.
 
-### Transparency & Trust
-
-- Oracle address is publicly viewable via `fraudOracle()` function
-- All fraud flags emit `FraudFlagged` events on-chain
-- Users can verify oracle before participating
-- Oracle decisions are permanent and auditable
-
-## Why this can be trusted
-
-Code is open and verifiable – The smart contract is fully deployed and auditable on Blockscout or Etherscan. Users can see exactly how funds are handled.
-
-Fraud protection is automated – Funds are only released or refunded based on verifiable fraud attestations or trusted oracle signatures, not arbitrary admin decisions.
-
-Immutable rules – The contract enforces escrow logic and fraud resolution automatically, eliminating human error or bias.
-
-Stablecoin-backed – Transactions use PYUSD, a regulated stablecoin, ensuring real-world value and predictable settlement.
-
-Transparent event logs – Every deposit, release, refund, and fraud flag emits an event for anyone to verify.
-
-Users don’t have to trust the developer—they trust the contract, the attestation, and the oracle.
+Users trust the immutable contract code, not the developer.
 
 ---
 
@@ -461,64 +337,12 @@ yarn dev
 
 Visit `http://localhost:3000` to see the application.
 
-### Project Structure
+---
 
-```
-├── app/                      # Next.js app directory
-│   ├── escrow/              # Escrow creation and detail pages
-│   ├── my-escrows/          # User's escrow dashboard
-│   ├── hooks/               # Custom React hooks
-│   │   ├── useBlockscout.js    # Blockscout SDK wrapper
-│   │   ├── useWalletClient.js  # Wallet connection
-│   │   └── useWalletAddress.js # Address management
-│   ├── lib/                 # Shared components
-│   │   ├── BlockscoutProviders.js  # SDK provider setup
-│   │   ├── DynamicWrapper.js       # Wallet connection wrapper
-│   │   └── Navigation.js           # Main navigation
-│   ├── util/                # Utility functions
-│   │   ├── safeSendContract.js # Contract interaction layer
-│   │   └── metadata.js          # Contract ABIs
-│   └── constants/           # App configuration
-├── contracts/               # Smart contract code
-│   ├── contracts/          # Solidity contracts
-│   │   ├── SafeSendContract.sol    # Main escrow contract
-│   │   ├── SimpleFraudOracle.sol   # Fraud detection oracle
-│   │   ├── IFraudOracle.sol        # Oracle interface
-│   │   └── MockERC20.sol           # Testing token
-│   ├── ignition/           # Hardhat Ignition modules
-│   │   └── modules/
-│   │       ├── SafeSendContract.ts
-│   │       └── SafeSendWithOracle.ts
-│   ├── scripts/            # Deployment scripts
-│   │   └── deploy-with-oracle.js
-│   └── test/               # Contract tests
-└── public/                 # Static assets
-```
+## Contributing
 
-## User Flows
+Contributions welcome! Please open an issue or submit a PR.
 
-### Creating an Escrow
-1. Connect wallet via Dynamic
-2. Navigate to "Create Escrow" page
-3. Fill in seller address, amount, and description
-4. Approve PYUSD spending (first transaction)
-5. Create escrow (second transaction)
-6. Oracle automatically checks for fraud
-7. If clean: Escrow created, receive confirmation
-8. If fraud: Transaction reverts, funds returned
+## License
 
-### Viewing Escrows
-- **My Escrows**: Dashboard showing all your escrows as buyer or seller
-- **Escrow Details**: Click any escrow to see full details, transaction history, and available actions
-- **Transaction History**: One-click access to Blockscout explorer for contract/wallet/token activity
-
-### Managing Escrows
-- **As Buyer**: Release funds to seller or request refund
-- **As Seller**: Wait for buyer to release funds
-- **As Oracle**: Mark suspicious escrows as fraud (automatic refund)
-
-### Monitoring Activity
-- Real-time toast notifications for all transactions
-- Transaction status updates (pending → confirmed)
-- Blockscout explorer integration for detailed views
-- Public audit trail of all escrow events
+MIT License - see LICENSE file for details
