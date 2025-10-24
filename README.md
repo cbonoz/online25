@@ -275,7 +275,6 @@ cp .env.example .env
 
 # Add your configuration
 NEXT_PUBLIC_CONTRACT_ADDRESS=0x... # Your deployed SafeSendContract
-NEXT_PUBLIC_FRAUD_ORACLE_ADDRESS=0x... # Your SimpleFraudOracle
 NEXT_PUBLIC_NETWORK=sepolia # or mainnet
 ```
 
@@ -311,10 +310,6 @@ yarn dev
 Visit `http://localhost:3000` to see the application.
 
 ---
-
-## Contributing
-
-Contributions welcome! Please open an issue or submit a PR.
 
 ## License
 
