@@ -38,7 +38,7 @@ const { Step } = Steps;
 export default function EscrowDetailsPage() {
     const router = useRouter();
     const params = useParams();
-    const [loading, setLoading] = useState(true); // Start with loading true
+    const [loading, setLoading] = useState(true);
     const [escrowData, setEscrowData] = useState(null);
     const [error, setError] = useState(null);
     const [fraudOracleAddress, setFraudOracleAddress] = useState(null);
@@ -52,18 +52,6 @@ export default function EscrowDetailsPage() {
         showAddressTransactions,
         showTokenTransactions 
     } = useBlockscout();
-    const mountedRef = useRef(true);
-    const loadingTimeoutRef = useRef(null);
-
-    // Cleanup function to prevent memory leaks
-    useEffect(() => {
-        return () => {
-            mountedRef.current = false;
-            if (loadingTimeoutRef.current) {
-                clearTimeout(loadingTimeoutRef.current);
-            }
-        };
-    }, []);
 
     // Load escrow data from contract
     useEffect(() => {
@@ -75,39 +63,17 @@ export default function EscrowDetailsPage() {
             return;
         }
 
-        // Prevent multiple concurrent loads for the same ID
-        let isCancelled = false;
-
         const loadEscrowData = async () => {
-            console.log('=== Starting loadEscrowData ===');
-            console.log('params.id:', params.id);
-            
-            if (mountedRef.current && !isCancelled) {
-                setLoading(true);
-                setError(null);
-                
-                // Set a safety timeout in case the request hangs
-                loadingTimeoutRef.current = setTimeout(() => {
-                    if (mountedRef.current && !isCancelled && loading) {
-                        console.warn('Loading timeout reached after 20 seconds');
-                        setError('Request timed out. Please check your network connection and try again.');
-                        setLoading(false);
-                    }
-                }, 20000); // 20 second safety timeout
-            }
+            setLoading(true);
+            setError(null);
             
             // Check if contract is available
-            const contractAvailable = isContractAvailable();
-            console.log('Contract available?', contractAvailable);
-            
-            if (!contractAvailable) {
+            if (!isContractAvailable()) {
                 const errorMessage = 'Contract address not configured. Please set NEXT_PUBLIC_CONTRACT_ADDRESS environment variable.';
                 console.error(errorMessage);
-                if (mountedRef.current && !isCancelled) {
-                    setError(errorMessage);
-                    setEscrowData(null);
-                    setLoading(false);
-                }
+                setError(errorMessage);
+                setEscrowData(null);
+                setLoading(false);
                 return;
             }
 
@@ -120,27 +86,15 @@ export default function EscrowDetailsPage() {
                 }
                 
                 console.log('Loading escrow from contract:', escrowId);
-                console.log('Calling getEscrow...');
-                
                 const data = await getEscrow(escrowId);
+                console.log('Escrow data loaded successfully:', data);
                 
-                console.log('getEscrow completed successfully:', data);
-                console.log('mountedRef.current:', mountedRef.current);
-                console.log('isCancelled:', isCancelled);
-                
-                if (mountedRef.current && !isCancelled) {
-                    console.log('Setting escrow data...');
-                    setEscrowData(data);
-                    setError(null);
-                    console.log('Escrow data set successfully');
-                } else {
-                    console.warn('Component unmounted or cancelled, not setting data');
-                }
+                setEscrowData(data);
+                setError(null);
             } catch (error) {
                 console.error('Error loading escrow:', error);
-                // Handle specific error types
-                let errorMessage = 'Failed to load escrow data';
                 
+                let errorMessage = 'Failed to load escrow data';
                 if (error.message.includes('Escrow does not exist')) {
                     errorMessage = `Escrow #${params.id} does not exist. Please check the escrow ID and try again.`;
                 } else if (error.message.includes('Invalid escrow ID')) {
@@ -151,37 +105,15 @@ export default function EscrowDetailsPage() {
                     errorMessage = `Error loading escrow: ${error.message}`;
                 }
                 
-                if (mountedRef.current && !isCancelled) {
-                    setError(errorMessage);
-                    setEscrowData(null);
-                }
+                setError(errorMessage);
+                setEscrowData(null);
             } finally {
-                console.log('In finally block - mountedRef.current:', mountedRef.current, 'isCancelled:', isCancelled);
-                if (mountedRef.current && !isCancelled) {
-                    console.log('Setting loading to false');
-                    setLoading(false);
-                    // Clear the safety timeout
-                    if (loadingTimeoutRef.current) {
-                        clearTimeout(loadingTimeoutRef.current);
-                        loadingTimeoutRef.current = null;
-                    }
-                    console.log('Loading state should now be false');
-                } else {
-                    console.warn('Component unmounted in finally block');
-                }
+                setLoading(false);
             }
         };
 
         loadEscrowData();
-        
-        // Return cleanup function
-        return () => {
-            isCancelled = true;
-            if (loadingTimeoutRef.current) {
-                clearTimeout(loadingTimeoutRef.current);
-            }
-        };
-    }, [params.id]); // Only depend on params.id
+    }, [params.id]);
 
     // Load fraud oracle information
     useEffect(() => {
@@ -239,9 +171,9 @@ export default function EscrowDetailsPage() {
             message.success('Funds released successfully!');
             console.log('Transaction hash:', hash);
             
-            // Show transaction notification in Blockscout
+            // Show transaction notification in Blockscout (non-blocking)
             if (hash) {
-                await showTransactionToast(hash);
+                showTransactionToast(hash);
             }
             
             // Refresh escrow data
@@ -272,9 +204,9 @@ export default function EscrowDetailsPage() {
             message.success('Refund processed successfully!');
             console.log('Transaction hash:', hash);
             
-            // Show transaction notification in Blockscout
+            // Show transaction notification in Blockscout (non-blocking)
             if (hash) {
-                await showTransactionToast(hash);
+                showTransactionToast(hash);
             }
             
             // Refresh escrow data
@@ -310,9 +242,9 @@ export default function EscrowDetailsPage() {
             message.success('Escrow marked as fraudulent and funds refunded to buyer!');
             console.log('Transaction hash:', hash);
             
-            // Show transaction notification in Blockscout
+            // Show transaction notification in Blockscout (non-blocking)
             if (hash) {
-                await showTransactionToast(hash);
+                showTransactionToast(hash);
             }
             
             // Refresh escrow data
@@ -392,7 +324,7 @@ export default function EscrowDetailsPage() {
     };
 
     // Debug: Log render state
-    console.log('Render - loading:', loading, 'error:', error, 'escrowData:', escrowData);
+    console.log('Render - loading:', loading, 'error:', error, 'hasData:', !!escrowData);
 
     // Handle loading state
     if (loading) {

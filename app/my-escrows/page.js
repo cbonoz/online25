@@ -25,7 +25,6 @@ import {
 } from '../util/safeSendContract';
 import { useWalletAddress } from '../hooks/useWalletAddress';
 import { useBlockscout } from '../hooks/useBlockscout';
-import DemoModeAlert from '../lib/DemoModeAlert';
 import { siteConfig, PYUSD_TOKEN_ADDRESS } from '../constants';
 
 const { Title, Paragraph, Text } = Typography;
@@ -39,6 +38,7 @@ export default function MyEscrowsPage() {
     const [sellerEscrows, setSellerEscrows] = useState([]);
     const [isUserFraudOracle, setIsUserFraudOracle] = useState(false);
     const [isFraudOracleActive, setIsFraudOracleActive] = useState(false);
+    const [oracleCheckComplete, setOracleCheckComplete] = useState(false);
     const { address: walletAddress } = useWalletAddress();
     const { 
         showContractTransactions, 
@@ -50,45 +50,10 @@ export default function MyEscrowsPage() {
     useEffect(() => {
         const loadEscrows = async () => {
             if (!isContractAvailable() || !walletAddress) {
-                // Use mock data when contract is not available
-                const mockEscrows = [
-                    {
-                        id: 1,
-                        amount: '500.00',
-                        seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
-                        buyer: walletAddress || '0x1234567890abcdef1234567890abcdef12345678',
-                        status: EscrowStatus.Active,
-                        statusText: 'Active',
-                        description: 'Website development project',
-                        createdAt: '2025-01-10',
-                        fraudFlagged: false
-                    },
-                    {
-                        id: 2,
-                        amount: '250.00',
-                        buyer: '0x1234567890abcdef1234567890abcdef12345678',
-                        seller: walletAddress || '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
-                        status: EscrowStatus.Active,
-                        statusText: 'Active',
-                        description: 'Logo design services',
-                        createdAt: '2025-01-08',
-                        fraudFlagged: false
-                    },
-                    {
-                        id: 3,
-                        amount: '1000.00',
-                        seller: '0xabcdef1234567890abcdef1234567890abcdef12',
-                        buyer: walletAddress || '0x1234567890abcdef1234567890abcdef12345678',
-                        status: EscrowStatus.Released,
-                        statusText: 'Released',
-                        description: 'Mobile app development',
-                        createdAt: '2025-01-05',
-                        fraudFlagged: false
-                    }
-                ];
-                setEscrows(mockEscrows);
-                setBuyerEscrows(mockEscrows.filter(e => e.buyer.toLowerCase() === (walletAddress || '0x1234567890abcdef1234567890abcdef12345678').toLowerCase()));
-                setSellerEscrows(mockEscrows.filter(e => e.seller.toLowerCase() === (walletAddress || '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123').toLowerCase()));
+                console.log('Contract not available or no wallet connected');
+                setEscrows([]);
+                setBuyerEscrows([]);
+                setSellerEscrows([]);
                 return;
             }
 
@@ -119,9 +84,19 @@ export default function MyEscrowsPage() {
     // Check if user is fraud oracle
     useEffect(() => {
         const checkFraudOracle = async () => {
+            setOracleCheckComplete(false);
+            
             if (!walletAddress) {
                 setIsUserFraudOracle(false);
                 setIsFraudOracleActive(false);
+                setOracleCheckComplete(true);
+                return;
+            }
+            
+            if (!isContractAvailable()) {
+                setIsUserFraudOracle(false);
+                setIsFraudOracleActive(false);
+                setOracleCheckComplete(true);
                 return;
             }
             
@@ -139,42 +114,13 @@ export default function MyEscrowsPage() {
                 console.error('Error checking fraud oracle status:', error);
                 setIsUserFraudOracle(false);
                 setIsFraudOracleActive(false);
+            } finally {
+                setOracleCheckComplete(true);
             }
         };
         
         checkFraudOracle();
     }, [walletAddress]);
-
-    // Mock escrow data - in production this would come from blockchain
-    const mockEscrows = [
-        {
-            id: 'escrow-1',
-            amount: '500.00',
-            seller: '0x742d35Cc6635C0532925a3b8D9C1aCb4d3D9b123',
-            status: 'active',
-            description: 'Website development project',
-            createdAt: '2025-01-10',
-            role: 'buyer'
-        },
-        {
-            id: 'escrow-2', 
-            amount: '250.00',
-            buyer: '0x1234567890abcdef1234567890abcdef12345678',
-            status: 'pending_release',
-            description: 'Logo design services',
-            createdAt: '2025-01-08',
-            role: 'seller'
-        },
-        {
-            id: 'escrow-3',
-            amount: '1000.00',
-            seller: '0xabcdef1234567890abcdef1234567890abcdef12',
-            status: 'completed',
-            description: 'Mobile app development',
-            createdAt: '2025-01-05',
-            role: 'buyer'
-        }
-    ];
 
     const getStatusColor = (status) => {
         // Handle both old mock format and new contract format
@@ -352,8 +298,6 @@ export default function MyEscrowsPage() {
                 </Paragraph>
             </div>
 
-            <DemoModeAlert />
-
             {/* Blockscout Transaction Monitoring */}
             <Card 
                 title="View history"
@@ -393,7 +337,7 @@ export default function MyEscrowsPage() {
                 </Text> */}
             </Card>
 
-            {!isFraudOracleActive && isContractAvailable() && (
+            {oracleCheckComplete && !isFraudOracleActive && isContractAvailable() && (
                 <Alert
                     message="No Fraud Oracle Configured"
                     description="The contract owner has not configured a fraud oracle. Fraud protection features are disabled."

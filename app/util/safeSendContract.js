@@ -44,7 +44,7 @@ export const EscrowStatus = {
 export const getStatusText = (status) => {
     switch (status) {
         case EscrowStatus.Active: return 'Active';
-        case EscrowStatus.Released: return 'Released';
+        case EscrowStatus.Released: return 'Released by buyer';
         case EscrowStatus.Refunded: return 'Refunded';
         case EscrowStatus.FraudFlagged: return 'Fraud Flagged';
         default: return 'Unknown';

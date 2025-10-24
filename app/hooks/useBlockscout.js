@@ -21,7 +21,11 @@ export function useBlockscout() {
      */
     const showTransactionToast = async (txHash, customChainId = chainId) => {
         try {
-            await openTxToast(customChainId, txHash);
+            // Don't await - let it run in background to avoid blocking
+            // Blockscout indexing can take time on testnets
+            openTxToast(customChainId, txHash).catch(err => {
+                console.warn('Transaction toast failed (non-critical):', err);
+            });
         } catch (error) {
             console.error('Failed to show transaction toast:', error);
         }

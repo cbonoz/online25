@@ -28,7 +28,7 @@ export const siteConfig = {
 export const DEMO_DATA = {
     sellerAddress: '0x81e9aA254Ff408458A7267Df3469198f5045A561',
     amount: 0.1, // PYUSD
-    description: 'Demo escrow transaction for testing SafeSend fraud prevention features'
+    description: 'Website design project'
 };
 
 // Legacy exports for backward compatibility
