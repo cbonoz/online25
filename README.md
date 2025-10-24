@@ -105,7 +105,7 @@ Example contract transactions: https://eth-sepolia.blockscout.com/address/0x5E7e
 │                                │  SIMPLEFRAUDORACLE.SOL          │  │
 │                                │  (Modular & Upgradeable)        │  │
 │                                │                                 │  │
-│                                │  • checkEscrow()                │  │
+│                                │  • Hardhat deployed
 │                                │  • Blacklist Management         │  │
 │                                │  • Transaction Limits           │  │
 │                                │  • Manual Fraud Flagging        │  │

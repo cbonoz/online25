@@ -2,13 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IFraudOracle.sol";
 
 /**
  * @title SimpleFraudOracle
  * @dev Lightweight fraud detection oracle for SafeSend escrow system
  * Performs basic checks: blacklist, amount limits, and manual flagging
  */
-contract SimpleFraudOracle is Ownable {
+contract SimpleFraudOracle is IFraudOracle, Ownable {
     
     // Simple fraud rules
     uint256 public maxTransactionAmount = 5000 * 10**6; // 5000 PYUSD (6 decimals)

@@ -1,8 +1,42 @@
 # SafeSendContract
 
+## Deployment Options
 
+SafeSend can be deployed with or without fraud oracle protection:
 
-### Running Tests
+### Option 1: Deploy with Fraud Oracle (Recommended)
+
+This automatically deploys both the SimpleFraudOracle AND SafeSendContract, linking them together:
+
+```shell
+# Deploy to Sepolia with oracle
+yarn deploy:with-oracle
+
+# Or to mainnet
+HARDHAT_NETWORK=mainnet npx hardhat ignition deploy --network mainnet ignition/modules/SafeSendWithOracle.ts
+```
+
+**What this does:**
+1. Deploys SimpleFraudOracle contract
+2. Deploys SafeSendContract with the oracle address as a constructor parameter
+3. The contracts are permanently linked - SafeSendContract knows its oracle address
+4. Outputs both contract addresses for your `.env` file
+
+### Option 2: Deploy without Oracle
+
+Deploy SafeSendContract standalone (oracle disabled):
+
+```shell
+# Sepolia
+yarn deploy:sepolia
+
+# Mainnet  
+yarn deploy:mainnet
+```
+
+---
+
+## Running Tests
 
 To run all the tests in the project, execute the following command:
 
@@ -10,10 +44,29 @@ To run all the tests in the project, execute the following command:
 yarn test
 ```
 
+---
 
-### Make a deployment to Sepolia
+## How Oracle Integration Works
 
-This project includes Ignition modules to deploy the SafeSendContract with automatic PYUSD address detection based on the network.
+When using `deploy:with-oracle`, the deployment process:
+
+1. **Deploys SimpleFraudOracle** - Creates the fraud detection contract
+2. **Deploys SafeSendContract** - Passes the oracle address to the constructor:
+   ```solidity
+   constructor(address _pyusdToken, address _fraudOracle) {
+       pyusdToken = IERC20(_pyusdToken);
+       fraudOracle = _fraudOracle;  // Oracle address stored on deployment
+   }
+   ```
+3. **Returns both addresses** - Use these in your frontend `.env`:
+   ```bash
+   NEXT_PUBLIC_CONTRACT_ADDRESS=0x...  # SafeSendContract address
+   NEXT_PUBLIC_FRAUD_ORACLE_ADDRESS=0x...  # SimpleFraudOracle address
+   ```
+
+The oracle can be updated later by the contract owner using `updateFraudOracle(newAddress)`.
+
+---
 
 ## Local Testing with Mock Token
 
@@ -23,45 +76,38 @@ For local testing with a mock PYUSD token:
 yarn deploy:test
 ```
 
-## Production Deployment 
+---
 
-The deployment modules automatically use the correct PYUSD addresses for each network:
+## Environment Variables for Frontend
 
-### Sepolia Testnet:
-```shell
-yarn deploy:sepolia
-```
-
-### Mainnet:
-```shell
-yarn deploy:mainnet
-```
-
-## Environment Variables
-
-Set these environment variables for production deployments:
+After deployment, add these to your frontend `.env` file:
 
 ```bash
-# Optional: Your fraud oracle address (leave unset or set to 0x0000... to disable oracle)
-export FRAUD_ORACLE_ADDRESS="0xYourFraudOracleAddress"
+# Required: Your deployed SafeSendContract address
+NEXT_PUBLIC_CONTRACT_ADDRESS="0xYourSafeSendContractAddress"
 
-# Optional: Override network detection
-export NEXT_PUBLIC_NETWORK="mainnet" # or "sepolia"
+# Optional: Your SimpleFraudOracle address (if deployed with oracle)
+NEXT_PUBLIC_FRAUD_ORACLE_ADDRESS="0xYourFraudOracleAddress"
+
+# Network selection
+NEXT_PUBLIC_NETWORK="sepolia" # or "mainnet"
 ```
 
-## Fraud Oracle Configuration
+---
 
-The SafeSendContract supports optional fraud oracle functionality:
+## Oracle Behavior
 
-- **With Oracle**: Set `FRAUD_ORACLE_ADDRESS` to a valid address to enable fraud protection
-- **Without Oracle**: Leave `FRAUD_ORACLE_ADDRESS` unset or set to `0x0000000000000000000000000000000000000000` to disable oracle functionality
+When oracle is **enabled** (deployed with `deploy:with-oracle`):
+- Automatic fraud checks on every escrow deposit
+- Oracle owner can manually flag suspicious transactions
+- Flagged escrows automatically refund the buyer
 
-When oracle is disabled:
+When oracle is **disabled** (deployed without oracle):
 - Only buyers can initiate refunds
-- `markFraud()` function becomes unavailable
-- Contract operates as a simple buyer-controlled escrow
+- `markFraud()` function unavailable
+- Contract operates as simple buyer-controlled escrow
 
-## PYUSD Addresses Used
+---## PYUSD Addresses Used
 
 - **Ethereum Mainnet**: `0x6c3ea9036406852006290770BEdFcAbA0e23A0e8`
 - **Sepolia Testnet**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
