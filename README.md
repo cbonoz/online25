@@ -138,33 +138,6 @@ KEY ARCHITECTURAL PRINCIPLES
    → Standard ERC-20 approve/transfer flow
 ```
 
-KEY FEATURES:
-═════════════
-
-1. MODULAR ORACLE DESIGN
-   - IFraudOracle interface standardizes fraud detection
-   - Oracle contract can be swapped without redeploying SafeSendContract
-   - Maintained by external authority (fraud detection specialist)
-   - Payment contract only consults oracle, doesn't contain fraud logic
-
-2. AUTOMATIC FRAUD REJECTION
-   - Oracle consulted during escrow creation (deposit())
-   - Flagged transactions immediately refund buyer + revert
-   - No manual intervention needed for detected fraud
-   - Graceful degradation if oracle unavailable
-
-3. TRANSPARENT & AUDITABLE
-   - All decisions logged as on-chain events
-   - Public oracle address visible to all participants
-   - Users can verify oracle reputation before transacting
-   - Complete history viewable on Blockscout/Etherscan
-
-4. PYUSD INTEGRATION
-   - Regulated stablecoin for real-world value
-   - 6 decimal precision (1 PYUSD = 1,000,000 units)
-   - ERC-20 compatible with standard approve/transferFrom flow
-```
-
 ---
 
 ## Features
