@@ -16,6 +16,8 @@ Prototype built for the EthOnline 2025 hackathon.
 
 Demo url: https://usesafesend.vercel.app/ (deployed on testnet)
 
+Demo video: https://youtu.be/o4sYUALi7d8
+
 <!-- Demo video:  -->
 
 **🛡️ Enterprise-Grade Fraud Protection at Blockchain Costs**
@@ -162,26 +164,30 @@ KEY ARCHITECTURAL PRINCIPLES
 
 SafeSend is built around three key partner technologies: PYUSD, Hardhat, and Blockscout.
 
-PYUSD – PayPal’s regulated stablecoin serves as the payment rail. Because it’s fully ERC-20 compatible and backed by real-world reserves, it provides the reliability and consumer confidence needed for escrow-based payments. All transfers and refunds in SafeSend use PYUSD, ensuring predictable settlement and fiat equivalence.
+**PYUSD** – PayPal's regulated stablecoin serves as the payment rail for all SafeSend escrow transactions. Because it's fully ERC-20 compatible and backed by real-world reserves, it provides the reliability and consumer confidence needed for escrow-based payments.
 
-Hardhat – Used for contract development, deployment, and verification. Hardhat’s scripting and testing environment made it possible to quickly simulate multiple fraud scenarios, verify contracts on testnets, and emit events compatible with explorer indexing.
+**PYUSD Integration in SafeSend:**
+- **Escrow Currency** – All SafeSendContract deposits, releases, and refunds use PYUSD via ERC-20 transferFrom/transfer functions with 6 decimal precision
+- **Fraud Detection Amounts** – SimpleFraudOracle validates transaction amounts in PYUSD units (default 5000 PYUSD max) to prevent suspicious large transfers
+- **Automatic Network Selection** – SafeSend automatically uses Sepolia PYUSD (0xCaC...bB9) for testnet and Mainnet PYUSD (0x6c3...0e8) based on deployment
 
-Blockscout – Integrated as both a transparency layer and developer tool using the official Blockscout SDK (@blockscout/app-sdk). Every SafeSend action (deposit, fraud attestation, refund, release) emits an event visible through Blockscout's explorer and SDK, making the entire fraud arbitration process publicly auditable.
+**Hardhat** – Used for contract development, deployment, and verification. Hardhat's comprehensive tooling environment made it possible to build a production-ready escrow system with modular oracle architecture.
 
-**Blockscout SDK Integration Features:**
-- **Real-time Transaction Notifications** – Toast notifications with pending/success/error states appear instantly for all escrow operations (create, release, refund, fraud marking)
-- **Transaction History Popups** – Interactive popups allow users to view complete transaction history for contracts, wallet addresses, and PYUSD token transfers
-- **Contract Activity Monitoring** – Dedicated buttons throughout the app to view SafeSend contract transactions in real-time
-- **PYUSD Transaction Tracking** – Direct access to PYUSD token transaction history via integrated explorer
+**Hardhat Integration in SafeSend:**
+- **Oracle-Linked Deployment** – Hardhat Ignition's SafeSendWithOracle module automatically deploys SimpleFraudOracle then passes its address to SafeSendContract's constructor
+- **Fraud Scenario Testing** – Test suite validates blacklist checks, amount limits, same-address detection, and escrow state transitions using Hardhat's testing framework
+- **Production Deployment** – `yarn deploy:with-oracle` script uses Hardhat to deploy both contracts to Sepolia/Mainnet and outputs addresses for frontend .env configuration
+
+**Blockscout** – Integrated as both a transparency layer and developer tool using the official Blockscout SDK (@blockscout/app-sdk). Every SafeSend action (deposit, fraud attestation, refund, release) emits an event visible through Blockscout's explorer and SDK, making the entire fraud arbitration process publicly auditable.
+
+**Blockscout SDK Integration in SafeSend:**
+- **Transaction Monitoring** – useBlockscout hook wraps SDK to show toast notifications for every deposit/release/refund/markFraud transaction with real-time pending→success status updates
+- **Contract Transparency** – My Escrows page and Escrow Details page include dedicated buttons that open Blockscout popups showing SafeSendContract transaction history filtered by escrow events
+- **Oracle Verification** – Fraud oracle addresses are clickable links to Blockscout (eth-sepolia.blockscout.com) allowing users to verify SimpleFraudOracle contract code and flagging decisions
 
 The contract is written in Solidity, deployed on Ethereum testnets, and uses a single shared escrow logic that supports multiple businesses. Each business registers its own oracle for fraud attestations, allowing scalable participation without redeploying new contracts.
 
-In essence, SafeSend combines on-chain logic, stablecoin security, and open attestations to create a trust-minimized consumer protection system for digital payments — bringing Web2-style confidence into the Web3 economy.
-
-<!-- 1. PyUSD – Provides the stablecoin for secure, real-world-value payments in the escrow system, enabling consumer payment use cases.
-2. Hardhat – Handles smart contract deployment, testing, and verification, ensuring reproducibility and developer productivity.
-3. Blockscout – Offers blockchain explorer functionality and SDK support for viewing contract events, token balances, and auditing escrow transactions in real time. -->
-
+In essence, SafeSend combines on-chain logic, stablecoin security, and open attestations to create a trust-minimized consumer protection system for digital payments.
 ---
 
 ## How It Works
