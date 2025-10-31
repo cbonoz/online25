@@ -8,22 +8,22 @@
 
 ## The Problem
 
-Traditional payment systems on Web2 offer robust buyer protection and fraud detection, but can often come with high fees (2-3% per transaction) and centralized control. Meanwhile, Web3 payments offer low costs and transparency but lack consumer protection—once you send crypto, it's gone. Users are left choosing between safety and cost-efficiency.
+Traditional payment systems on Web2 offer robust buyer protection and fraud detection, but can often come with high fees (ex: 2-3% per transaction) and centralized control. Meanwhile, Web3 payments offer low costs and transparency but lack consumer protection—once you send crypto, it's gone. Users are left choosing between safety and cost-efficiency.
 
 **SafeSend** is a decentralized escrow platform built on Ethereum that combines the security of traditional payment processors with the low-cost transparency of blockchain technology. By using PYUSD (PayPal's regulated stablecoin) and a modular fraud oracle architecture, SafeSend enables:
 
 Prototype built for the EthOnline 2025 hackathon.
 
-Demo url: https://usesafesend.vercel.app/ (deployed on testnet)
+Demo url: [https://usesafesend.vercel.app/](https://usesafesend.vercel.app/) (deployed on testnet)
 
-Demo video: https://youtu.be/o4sYUALi7d8
+Demo video: [https://youtu.be/o4sYUALi7d8](https://youtu.be/o4sYUALi7d8)
 
 <!-- Demo video:  -->
 
 **🛡️ Enterprise-Grade Fraud Protection at Blockchain Costs**
 - Real-time fraud detection during every transaction
 - Automatic buyer refunds when fraud is detected
-- No 2-3% payment processing fees—just gas costs
+- No payment processing fees—just gas costs
 
 **🔄 Evolving Security Without Contract Redeployment**
 - Fraud detection algorithm lives in a separate, upgradeable oracle contract
@@ -44,7 +44,7 @@ Demo video: https://youtu.be/o4sYUALi7d8
 
 ## How It Works
 
-SafeSend uses a **modular oracle pattern** where the payment escrow contract (SafeSendContract) consults an external fraud detection oracle (SimpleFraudOracle) through a standardized interface (IFraudOracle). This architectural separation enables:
+SafeSend uses a **oracle pattern** where the payment escrow contract (SafeSendContract) consults an external fraud detection oracle (ex: SimpleFraudOracle) through a standardized interface (IFraudOracle). This architectural separation enables:
 
 1. **Immutable Payment Logic** - Core escrow contract never needs updates
 2. **Evolving Fraud Detection** - Oracle can be upgraded as new threats emerge
@@ -54,13 +54,13 @@ SafeSend uses a **modular oracle pattern** where the payment escrow contract (Sa
 
 The oracle evaluates transactions against blacklists, amount limits, behavioral patterns, and manual flags—returning a simple pass/fail decision. Flagged transactions are automatically refunded, protecting buyers without manual dispute resolution.
 
-Example contract transactions: https://eth-sepolia.blockscout.com/address/0x5E7eB35071A9D6b76fF9B37A0a406B5B67e03595?tab=txs
+Example contract transactions: [https://eth-sepolia.blockscout.com/address/0x5E7eB35071A9D6b76fF9B37A0a406B5B67e03595?tab=txs](https://eth-sepolia.blockscout.com/address/0x5E7eB35071A9D6b76fF9B37A0a406B5B67e03595?tab=txs)
 
 ## System Architecture & User Flow
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                       SAFESEND ARCHITECTURE                           │
+│                       SAFESEND ARCHITECTURE                          │
 └──────────────────────────────────────────────────────────────────────┘
 
                      ┌─────────────────────┐
@@ -78,41 +78,41 @@ Example contract transactions: https://eth-sepolia.blockscout.com/address/0x5E7e
               │  │  • My Escrows Dashboard        │  │
               │  │  • Escrow Details & Actions    │  │
               │  └────────────────────────────────┘  │
-              │                                       │
+              │                                      │
               │  ┌────────────────────────────────┐  │
               │  │  Viem + Dynamic SDK            │  │
               │  │  (Wallet Integration Layer)    │  │
               │  └────────────────────────────────┘  │
-              └───────────────┬───────────────────────┘
+              └───────────────┬──────────────────────┘
                               │
                               │ Transaction Signing
                               │ Contract Interactions
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                   ETHEREUM BLOCKCHAIN (Sepolia)                      │
-│                                                                       │
-│  ┌──────────────────┐         ┌─────────────────────────────────┐  │
-│  │  PYUSD TOKEN     │────────▶│    SAFESENDCONTRACT.SOL         │  │
-│  │  (ERC-20)        │ approve │                                 │  │
-│  │                  │ transfer│  • deposit() - Create Escrow    │  │
-│  └──────────────────┘         │  • release() - Complete Payment │  │
+│                   ETHEREUM BLOCKCHAIN (Sepolia/Mainnet)             │
+│                                                                     │
+│  ┌──────────────────┐         ┌────────────────────────────────-─┐  │
+│  │  PYUSD TOKEN     │────────▶│    SAFESENDCONTRACT.SOL          |  │
+│  │  (ERC-20)        │ approve │                                  │  │
+│  │                  │ transfer│  • deposit() - Create Escrow     │  │
+│  └──────────────────┘         │  • release() - Complete Payment  │  │
 │                                │  • refund() - Cancel & Refund   │  │
 │                                │  • markFraud() - Flag Fraud     │  │
 │                                └────────┬────────────────────────┘  │
-│                                         │                            │
-│                                         │ Oracle Fraud Check         │
-│                                         │ (via IFraudOracle)         │
-│                                         ▼                            │
+│                                         │                           │
+│                                         │ Oracle Fraud Check        │
+│                                         │ (via IFraudOracle)        │
+│                                         ▼                           │
 │                                ┌─────────────────────────────────┐  │
 │                                │  SIMPLEFRAUDORACLE.SOL          │  │
 │                                │  (Modular & Upgradeable)        │  │
 │                                │                                 │  │
-│                                │  • Hardhat deployed
+│                                │  • Hardhat deployed             |  |
 │                                │  • Blacklist Management         │  │
 │                                │  • Transaction Limits           │  │
 │                                │  • Manual Fraud Flagging        │  │
 │                                │                                 │  │
-│                                │  ⚠️  Maintained by External     │  │
+│                                │  ⚠️ Maintained by External      │  │
 │                                │     Authority - Swappable       │  │
 │                                └─────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
@@ -122,7 +122,7 @@ Example contract transactions: https://eth-sepolia.blockscout.com/address/0x5E7e
                               ▼
               ┌──────────────────────────────────────┐
               │   BLOCKSCOUT EXPLORER & SDK          │
-              │                                       │
+              │                                      │
               │  • Real-time Transaction Monitoring  │
               │  • Event Logs & Audit Trail          │
               │  • Public Oracle Verification        │
@@ -171,7 +171,7 @@ SafeSend is built around three key partner technologies: PYUSD, Hardhat, and Blo
 - **Fraud Detection Amounts** – SimpleFraudOracle validates transaction amounts in PYUSD units (default 5000 PYUSD max) to prevent suspicious large transfers
 - **Automatic Network Selection** – SafeSend automatically uses Sepolia PYUSD (0xCaC...bB9) for testnet and Mainnet PYUSD (0x6c3...0e8) based on deployment
 
-**Hardhat** – Used for contract development, deployment, and verification. Hardhat's comprehensive tooling environment made it possible to build a production-ready escrow system with modular oracle architecture.
+**Hardhat** – Used for contract development, deployment, and verification. Hardhat's comprehensive tooling environment made it possible to build a production-ready escrow system with separate oracle architecture.
 
 **Hardhat Integration in SafeSend:**
 - **Oracle-Linked Deployment** – Hardhat Ignition's SafeSendWithOracle module automatically deploys SimpleFraudOracle then passes its address to SafeSendContract's constructor
@@ -183,11 +183,11 @@ SafeSend is built around three key partner technologies: PYUSD, Hardhat, and Blo
 **Blockscout SDK Integration in SafeSend:**
 - **Transaction Monitoring** – useBlockscout hook wraps SDK to show toast notifications for every deposit/release/refund/markFraud transaction with real-time pending→success status updates
 - **Contract Transparency** – My Escrows page and Escrow Details page include dedicated buttons that open Blockscout popups showing SafeSendContract transaction history filtered by escrow events
-- **Oracle Verification** – Fraud oracle addresses are clickable links to Blockscout (eth-sepolia.blockscout.com) allowing users to verify SimpleFraudOracle contract code and flagging decisions
+- **Oracle Verification** – Fraud oracle addresses are clickable links to Blockscout ([eth-sepolia.blockscout.com](https://eth-sepolia.blockscout.com)) allowing users to verify SimpleFraudOracle contract code and flagging decisions
 
-The contract is written in Solidity, deployed on Ethereum testnets, and uses a single shared escrow logic that supports multiple businesses. Each business registers its own oracle for fraud attestations, allowing scalable participation without redeploying new contracts.
+SafeSend is designed for independent deployment—each service provider deploys their own SafeSendContract instance with their choice of fraud oracle. The public, auditable contract code ensures transparency while the separate oracle design allows upgrading fraud detection without redeploying the payment contract.
 
-In essence, SafeSend combines on-chain logic, stablecoin security, and open attestations to create a trust-minimized consumer protection system for digital payments.
+SafeSend combines on-chain logic, stablecoin security, and oracle-based fraud detection to create a protection system for consumer payments.
 ---
 
 ## How It Works
@@ -258,7 +258,7 @@ Users trust the immutable contract code, not the developer.
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/cbonoz/online25.git
+git clone [https://github.com/cbonoz/online25.git](https://github.com/cbonoz/online25.git)
 cd online25
 ```
 
@@ -312,7 +312,7 @@ The deployment script will output:
 yarn dev
 ```
 
-Visit `http://localhost:3000` to see the application.
+Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
 ---
 
