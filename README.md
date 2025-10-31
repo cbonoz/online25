@@ -18,8 +18,6 @@ Demo url: [https://usesafesend.vercel.app/](https://usesafesend.vercel.app/) (de
 
 Demo video: [https://youtu.be/o4sYUALi7d8](https://youtu.be/o4sYUALi7d8)
 
-<!-- Demo video:  -->
-
 **🛡️ Enterprise-Grade Fraud Protection at Blockchain Costs**
 - Real-time fraud detection during every transaction
 - Automatic buyer refunds when fraud is detected
@@ -129,13 +127,12 @@ Example contract transactions: [https://eth-sepolia.blockscout.com/address/0x5E7
               └──────────────────────────────────────┘
 
 ═══════════════════════════════════════════════════════════════════════
-KEY ARCHITECTURAL PRINCIPLES
+KEY ARCHITECTURAL PIECES
 ═══════════════════════════════════════════════════════════════════════
 
-🔌 MODULAR ORACLE DESIGN
    → Oracle implements IFraudOracle interface for standardization
    → Can be swapped without redeploying main payment contract
-   → Maintained independently by fraud detection specialists
+   → Maintained independently by deploying authority
 
 ```
 
